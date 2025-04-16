@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<RootNamespace>AutoQuery.AspNetCore</RootNamespace>
+
+	<!-- NuGet Packaging -->
+	<Id>AutoQuery.AspNetCore</Id>
+	<PackageVersion>$(Version)</PackageVersion>
+	<Company>Willy</Company>
+	<Authors>Willy</Authors>
+	<Copyright>© Willy Wang.</Copyright>
+	<PackageTags>aspnetcore;query;filtering;pagination;middleware</PackageTags>
+	<Description>AutoQuery.AspNetCore extends AutoQuery with seamless integration into ASP.NET Core applications. It enables dynamic query processing, filtering, and pagination with minimal configuration, enhancing API flexibility and performance.</Description>
+	<PackageProjectUrl>https://github.com/willysoft/AutoQuery</PackageProjectUrl>
+	<RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<SignAssembly>true</SignAssembly>
+	<AssemblyOriginatorKeyFile>..\..\opensource.snk</AssemblyOriginatorKeyFile>
+	<IsPackable>true</IsPackable>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AutoQuery\AutoQuery.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AutoQuery.AspNetCore.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100bd24aa80c429bd4917c9458ea0a1ecb348b858c35422054e85391ed1f4c51c118662187ff2ceb0d32ba66769c91f1bbd38f4f06958dde60efbbd6c4e84cfdbf5dd1ab7c3ae567cc506a10635fee409390465d1a987248295314a896da6ba65bc5ea3247a766b096b1ddfcc68f28bbeccb1c095f0d7f4ae007f3415201a597197" />
+  </ItemGroup>
+	
+</Project>
