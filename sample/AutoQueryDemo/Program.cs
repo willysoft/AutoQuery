@@ -20,4 +20,8 @@ var result = users.AsQueryable().ApplyQuery(queryProcessor, new UserQueryOptions
     FilterIds = [3, 4],
 }).ToArray();
 
-Console.WriteLine("All Users:");
+Console.WriteLine("Filtered Users:");
+foreach (var user in result)
+{
+    Console.WriteLine($"{user.Id}: {user.Name}");
+}
