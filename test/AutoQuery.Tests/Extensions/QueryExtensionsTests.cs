@@ -37,7 +37,7 @@ public class QueryExtensionsTests
 
     [Theory]
     [ClassData(typeof(ApplyQueryPagedTestData))]
-    public void ApplyQueryPaged_ShouldApplyFilterSelectorAndPaging(List<TestData> data, TestQueryPagedOptions queryOptions, Expression<Func<TestData, bool>> filterExpression, Expression<Func<TestData, TestData>> selectorExpression, int expectedCount, int totalCount, int totalPages)
+    public void ApplyQueryPaged_ShouldApplyFilterSelectorAndPaging(List<TestData> data, TestQueryPagedOptions queryOptions, Expression<Func<TestData, bool>> filterExpression, Expression<Func<TestData, TestData>> selectorExpression, int expectedCount, string expectedName)
     {
         // Arrange
         var queryableData = data.AsQueryable();
@@ -51,9 +51,30 @@ public class QueryExtensionsTests
         var result = queryableData.ApplyQueryPaged(_queryProcessorMock.Object, queryOptions);
 
         // Assert
+        Assert.Equal(expectedCount, result.Count());
+        Assert.Equal(expectedName, result.First().Name);
+    }
+
+    [Theory]
+    [ClassData(typeof(ApplyQueryPagedResultTestData))]
+    public void ApplyQueryPagedResult_ShouldApplyFilterSelectorAndPaging(List<TestData> data, TestQueryPagedOptions queryOptions, Expression<Func<TestData, bool>> filterExpression, Expression<Func<TestData, TestData>> selectorExpression, int expectedCount, int totalCount, int totalPages, string expectedName)
+    {
+        // Arrange
+        var queryableData = data.AsQueryable();
+
+        _queryProcessorMock.Setup(x => x.BuildFilterExpression<TestData, TestQueryPagedOptions>(queryOptions))
+                           .Returns(filterExpression);
+        _queryProcessorMock.Setup(x => x.BuildSelectorExpression<TestData, TestQueryPagedOptions>(queryOptions))
+                           .Returns(selectorExpression);
+
+        // Act
+        var result = queryableData.ApplyQueryPagedResult(_queryProcessorMock.Object, queryOptions);
+
+        // Assert
         Assert.Equal(expectedCount, result.Datas.Count());
         Assert.Equal(totalCount, result.Count);
         Assert.Equal(totalPages, result.TotalPages);
+        Assert.Equal(expectedName, result.Datas.First().Name);
     }
 
     [Theory]
@@ -168,8 +189,58 @@ public class QueryExtensionsTests
                 (Expression<Func<TestData, bool>>)(x => x.Id > 0),
                 (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
                 1,
+                "Test1"
+            };
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 3, Name = "Test3" },
+                    new TestData { Id = 4, Name = "Test4" }
+                },
+                new TestQueryPagedOptions { Page = 1, PageSize = 2 },
+                (Expression<Func<TestData, bool>>)(x => x.Id > 2),
+                (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
                 2,
-                2
+                "Test3"
+            };
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 5, Name = "Test5" },
+                    new TestData { Id = 6, Name = "Test6" },
+                    new TestData { Id = 7, Name = "Test7" }
+                },
+                new TestQueryPagedOptions { Page = 2, PageSize = 2 },
+                (Expression<Func<TestData, bool>>)(x => x.Id > 4),
+                (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
+                1,
+                "Test7"
+            };
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public class ApplyQueryPagedResultTestData : IEnumerable<object[]>
+    {
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 1, Name = "Test1" },
+                    new TestData { Id = 2, Name = "Test2" }
+                },
+                new TestQueryPagedOptions { Page = 1, PageSize = 1 },
+                (Expression<Func<TestData, bool>>)(x => x.Id > 0),
+                (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
+                1,
+                2,
+                2,
+                "Test1"
             };
             yield return new object[]
             {
@@ -183,7 +254,8 @@ public class QueryExtensionsTests
                 (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
                 2,
                 2,
-                1
+                1,
+                "Test3"
             };
             yield return new object[]
             {
@@ -198,7 +270,8 @@ public class QueryExtensionsTests
                 (Expression<Func<TestData, TestData>>)(x => new TestData { Id = x.Id, Name = x.Name }),
                 1,
                 3,
-                2
+                2,
+                "Test7"
             };
         }
 

@@ -55,11 +55,11 @@ public class QueryPerformance
             PageSize = 10
         };
 
-        _autoQueryTestData.AsQueryable().ApplyQueryPaged(_queryProcessor, queryOptions).Datas.ToList();
+        _autoQueryTestData.AsQueryable().ApplyQueryPaged(_queryProcessor, queryOptions).ToList();
     }
 
     [Benchmark]
-    public void DynamicLinq_FilterSortSelectPageWith()
+    public void DynamicLinq_FilterSortSelectPage()
     {
         _dynamicLinqTestData.AsQueryable()
                  .Where("Name == @0", "Name5000")
@@ -71,7 +71,7 @@ public class QueryPerformance
     }
 
     [Benchmark]
-    public void AutoQuery_FilterSortPageWith()
+    public void AutoQuery_FilterSortPage()
     {
         var queryOptions = new TestQueryOptions
         {
@@ -81,11 +81,11 @@ public class QueryPerformance
             PageSize = 10
         };
 
-        _autoQueryTestData.AsQueryable().ApplyQueryPaged(_queryProcessor, queryOptions).Datas.ToList();
+        _autoQueryTestData.AsQueryable().ApplyQueryPaged(_queryProcessor, queryOptions).ToList();
     }
 
     [Benchmark]
-    public void DynamicLinq_FilterSortPageWith()
+    public void DynamicLinq_FilterSortPage()
     {
         _dynamicLinqTestData.AsQueryable()
                  .Where("Name == @0", "Name5000")
@@ -96,7 +96,7 @@ public class QueryPerformance
     }
 
     [Benchmark]
-    public void Sieve_FilterSortPageWith()
+    public void Sieve_FilterSortPage()
     {
         var sieveModel = new SieveModel
         {
