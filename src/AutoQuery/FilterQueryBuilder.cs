@@ -6,10 +6,10 @@ using System.Reflection;
 namespace AutoQuery;
 
 /// <summary>
-/// 用於構建篩選查詢的建構器類別。
+/// A builder class for constructing filter queries.
 /// </summary>
-/// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-/// <typeparam name="TData">數據的類型。</typeparam>
+/// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+/// <typeparam name="TData">The type of the data.</typeparam>
 public class FilterQueryBuilder<TQueryOptions, TData>
 {
     private readonly ConcurrentDictionary<string, (object Builder, Type QueryPropertyType)> _builderProperties = new();
@@ -18,14 +18,14 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     private readonly Dictionary<string, PropertyInfo> _queryOptionsProperties = typeof(TQueryOptions).GetProperties().ToDictionary(p => p.Name);
 
     /// <summary>
-    /// 註冊一個屬性以用於篩選查詢。
+    /// Registers a property for use in filter queries.
     /// </summary>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="propertyExpression">查詢選項中的屬性表達式。</param>
-    /// <param name="filterKeySelector">數據中的篩選鍵選擇器。</param>
-    /// <returns>篩選查詢屬性建構器。</returns>
-    /// <exception cref="ArgumentException">當屬性表達式無效時拋出。</exception>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="propertyExpression">The property expression in the query options.</param>
+    /// <param name="filterKeySelector">The filter key selector in the data.</param>
+    /// <returns>The filter query property builder.</returns>
+    /// <exception cref="ArgumentException">Thrown when the property expression is invalid.</exception>
     public ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> Property<TQueryProperty, TDataProperty>(
         Expression<Func<TQueryOptions, TQueryProperty>> propertyExpression,
         Expression<Func<TData, TDataProperty>> filterKeySelector)
@@ -40,12 +40,12 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     }
 
     /// <summary>
-    /// 註冊一個屬性以用於篩選查詢。
+    /// Registers a property for use in filter queries.
     /// </summary>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <param name="propertyExpression">查詢選項中的屬性表達式。</param>
-    /// <returns>篩選查詢屬性建構器。</returns>
-    /// <exception cref="ArgumentException">當屬性表達式無效時拋出。</exception>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <param name="propertyExpression">The property expression in the query options.</param>
+    /// <returns>The filter query property builder.</returns>
+    /// <exception cref="ArgumentException">Thrown when the property expression is invalid.</exception>
     public SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> Property<TQueryProperty>(Expression<Func<TQueryOptions, TQueryProperty>> propertyExpression)
     {
         var memberPath = propertyExpression.GetMemberPath(firstLevelOnly: true, noError: false);
@@ -58,10 +58,10 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     }
 
     /// <summary>
-    /// 構建篩選表達式。
+    /// Builds the filter expression.
     /// </summary>
-    /// <param name="instance">查詢選項的值。</param>
-    /// <returns>篩選表達式，如果沒有篩選條件則為 null。</returns>
+    /// <param name="instance">The value of the query options.</param>
+    /// <returns>The filter expression, or null if no filter conditions exist.</returns>
     public Expression<Func<TData, bool>>? BuildFilterExpression(TQueryOptions instance)
     {
         Expression<Func<TData, bool>>? combinedExpression = null;
@@ -90,11 +90,11 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     }
 
     /// <summary>
-    /// 使用表達樹取得屬性的值。
+    /// Retrieves the value of a property using expression trees.
     /// </summary>
-    /// <param name="property">屬性信息。</param>
-    /// <param name="instance">查詢選項的實例。</param>
-    /// <returns>屬性的值。</returns>
+    /// <param name="property">The property information.</param>
+    /// <param name="instance">The instance of the query options.</param>
+    /// <returns>The value of the property.</returns>
     private object? GetPropertyValue(PropertyInfo property, TQueryOptions instance)
     {
         if (!_propertyAccessorsCache.TryGetValue(property, out var accessor))
@@ -110,13 +110,13 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     }
 
     /// <summary>
-    /// 調用篩選表達式的構建方法。
+    /// Invokes the method to build the filter expression.
     /// </summary>
-    /// <param name="builderObj">建構器對象。</param>
-    /// <param name="filterPropertyValue">篩選屬性的值。</param>
-    /// <param name="queryPropertyType">查詢屬性的類型。</param>
-    /// <returns>篩選表達式。</returns>
-    /// <exception cref="InvalidOperationException">當找不到 BuildFilterExpression 方法時拋出。</exception>
+    /// <param name="builderObj">The builder object.</param>
+    /// <param name="filterPropertyValue">The value of the filter property.</param>
+    /// <param name="queryPropertyType">The type of the query property.</param>
+    /// <returns>The filter expression.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the BuildFilterExpression method is not found.</exception>
     private Expression<Func<TData, bool>>? InvokeBuildFilterExpression(object builderObj, object filterPropertyValue, Type queryPropertyType)
     {
         var builderType = builderObj.GetType();
@@ -145,11 +145,11 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     }
 
     /// <summary>
-    /// 合併兩個篩選表達式。
+    /// Combines two filter expressions.
     /// </summary>
-    /// <param name="expr1">第一個篩選表達式。</param>
-    /// <param name="expr2">第二個篩選表達式。</param>
-    /// <returns>合併後的篩選表達式。</returns>
+    /// <param name="expr1">The first filter expression.</param>
+    /// <param name="expr2">The second filter expression.</param>
+    /// <returns>The combined filter expression.</returns>
     private static Expression<Func<TData, bool>> CombineExpressions(Expression<Func<TData, bool>> expr1, Expression<Func<TData, bool>> expr2)
     {
         var parameter = Expression.Parameter(typeof(TData));

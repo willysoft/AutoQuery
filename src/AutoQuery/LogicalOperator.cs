@@ -1,17 +1,17 @@
 ﻿namespace AutoQuery;
 
 /// <summary>
-/// 表示可以在查詢中使用的邏輯運算符。
+/// Represents logical operators that can be used in queries.
 /// </summary>
 public enum LogicalOperator
 {
     /// <summary>
-    /// 邏輯 AND 運算符。
+    /// Logical AND operator.
     /// </summary>
     AND,
 
     /// <summary>
-    /// 邏輯 OR 運算符。
+    /// Logical OR operator.
     /// </summary>
     OR
 }

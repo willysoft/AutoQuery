@@ -5,30 +5,30 @@ using System.Linq.Expressions;
 namespace AutoQuery;
 
 /// <summary>
-/// 用於構建篩選查詢屬性的建構器類別。
+/// A builder class for constructing filter query properties.
 /// </summary>
-/// <typeparam name="TData">數據的類型。</typeparam>
-/// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-/// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
+/// <typeparam name="TData">The type of the data.</typeparam>
+/// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+/// <typeparam name="TDataProperty">The type of the data property.</typeparam>
 public class ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> : IFilterExpressionBuilder<TData, TQueryProperty>
 {
     private Expression<Func<TData, TDataProperty>> _filterKeySelector;
     private List<(Expression<Func<TQueryProperty, TDataProperty, bool>> Expression, LogicalOperator Logical)> _filterExpressions = new();
 
     /// <summary>
-    /// 初始化 <see cref="ComplexFilterQueryPropertyBuilder{TData, TQueryProperty, TDataProperty}"/> 類別的新實例。
+    /// Initializes a new instance of the <see cref="ComplexFilterQueryPropertyBuilder{TData, TQueryProperty, TDataProperty}"/> class.
     /// </summary>
-    /// <param name="filterKeySelector">數據中的篩選鍵選擇器。</param>
+    /// <param name="filterKeySelector">The filter key selector in the data.</param>
     public ComplexFilterQueryPropertyBuilder(Expression<Func<TData, TDataProperty>> filterKeySelector)
     {
         _filterKeySelector = filterKeySelector;
     }
 
     /// <summary>
-    /// 添加篩選表達式。
+    /// Adds a filter expression.
     /// </summary>
-    /// <param name="filterExpression">篩選表達式。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
+    /// <param name="filterExpression">The filter expression.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
     public void AddFilterExpression(Expression<Func<TQueryProperty, TDataProperty, bool>> filterExpression, LogicalOperator logicalOperator)
     {
         _filterExpressions.Add((filterExpression, logicalOperator));

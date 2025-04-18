@@ -6,7 +6,7 @@ using System.Reflection;
 namespace AutoQuery.Extensions;
 
 /// <summary>
-/// 提供查詢擴展方法。
+/// Provides query extension methods.
 /// </summary>
 public static class QueryExtensions
 {
@@ -14,14 +14,14 @@ public static class QueryExtensions
     private static readonly ConcurrentDictionary<string, PropertyInfo?> s_PropertyCache = new();
 
     /// <summary>
-    /// 應用查詢條件。
+    /// Applies query conditions.
     /// </summary>
-    /// <typeparam name="TData">查詢的實體類型。</typeparam>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <param name="query">查詢對象。</param>
-    /// <param name="queryProcessor">查詢處理對象。</param>
-    /// <param name="queryOption">查詢選項。</param>
-    /// <returns>應用查詢條件後的查詢對象。</returns>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor object.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The query object with conditions applied.</returns>
     public static IQueryable<TData> ApplyQuery<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
         where TQueryOptions : IQueryOptions
     {
@@ -35,14 +35,14 @@ public static class QueryExtensions
     }
 
     /// <summary>
-    /// 應用查詢條件和分頁選項。
+    /// Applies query conditions and pagination options.
     /// </summary>
-    /// <typeparam name="TData">查詢的實體類型。</typeparam>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <param name="query">查詢對象。</param>
-    /// <param name="queryProcessor">查詢建構器。</param>
-    /// <param name="queryOption">查詢選項。</param>
-    /// <returns>應用查詢條件和分頁選項後的查詢對象。</returns>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The query object with conditions and pagination options applied.</returns>
     public static PagedResult<TData> ApplyQueryPaged<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
         where TQueryOptions : IQueryPagedOptions
         where TData : class
@@ -63,12 +63,12 @@ public static class QueryExtensions
     }
 
     /// <summary>
-    /// 對查詢結果應用排序。
+    /// Applies sorting to the query results.
     /// </summary>
-    /// <typeparam name="T">查詢的實體類型。</typeparam>
-    /// <param name="query">查詢對象。</param>
-    /// <param name="queryOption">查詢選項。</param>
-    /// <returns>排序後的查詢結果。</returns>
+    /// <typeparam name="T">The type of the entity being queried.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The sorted query results.</returns>
     public static IQueryable<T> ApplySort<T>(this IQueryable<T> query, IQueryOptions queryOption)
     {
         if (string.IsNullOrWhiteSpace(queryOption.Sort))
@@ -100,12 +100,12 @@ public static class QueryExtensions
     }
 
     /// <summary>
-    /// 根據查詢條件進行分頁。
+    /// Applies pagination to the query results.
     /// </summary>
-    /// <typeparam name="T">查詢的實體類型。</typeparam>
-    /// <param name="query">查詢對象。</param>
-    /// <param name="queryOption">查詢選項。</param>
-    /// <returns>應用分頁後的查詢對象。</returns>
+    /// <typeparam name="T">The type of the entity being queried.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The query object with pagination applied.</returns>
     public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption)
     {
         if (queryOption.PageSize.HasValue)

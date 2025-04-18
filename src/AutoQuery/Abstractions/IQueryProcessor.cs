@@ -3,27 +3,27 @@
 namespace AutoQuery.Abstractions;
 
 /// <summary>
-/// 定義查詢建構器服務的介面。
+/// Defines the interface for query builder services.
 /// </summary>
 public interface IQueryProcessor
 {
     /// <summary>
-    /// 構建篩選表達式。
+    /// Builds the filter expression.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <param name="queryOptions">查詢選項。</param>
-    /// <returns>篩選表達式，如果沒有篩選條件則為 null。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="queryOptions">The query options.</param>
+    /// <returns>The filter expression, or null if no filter conditions exist.</returns>
     Expression<Func<TData, bool>>? BuildFilterExpression<TData, TQueryOptions>(TQueryOptions queryOptions)
         where TQueryOptions : IQueryOptions;
 
     /// <summary>
-    /// 構建選擇器表達式。
+    /// Builds the selector expression.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <param name="queryOptions">查詢選項。</param>
-    /// <returns>選擇器表達式，如果沒有選擇條件則為 null。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="queryOptions">The query options.</param>
+    /// <returns>The selector expression, or null if no selection conditions exist.</returns>
     Expression<Func<TData, TData>>? BuildSelectorExpression<TData, TQueryOptions>(TQueryOptions queryOptions)
         where TQueryOptions : IQueryOptions;
 }

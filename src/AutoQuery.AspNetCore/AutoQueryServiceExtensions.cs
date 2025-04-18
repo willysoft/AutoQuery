@@ -8,16 +8,16 @@ using System.Reflection;
 namespace Microsoft.AspNetCore.Builder;
 
 /// <summary>
-/// 提供查詢服務相關的擴展方法。
+/// Provides extension methods related to query services.
 /// </summary>
 public static class AutoQueryServiceExtensions
 {
     /// <summary>
-    /// 向服務集合中添加查詢建構器服務。
+    /// Adds query builder services to the service collection.
     /// </summary>
-    /// <param name="services">服務集合。</param>
-    /// <param name="assembly">要應用配置的程序集。</param>
-    /// <returns>更新後的服務集合。</returns>
+    /// <param name="services">The service collection.</param>
+    /// <param name="assembly">The assembly to apply configurations from.</param>
+    /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddAutoQuery(this IServiceCollection services, Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(services);

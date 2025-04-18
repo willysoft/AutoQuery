@@ -1,17 +1,17 @@
 ﻿namespace AutoQuery.Abstractions;
 
 /// <summary>
-/// 查詢參數
+/// Query parameters.
 /// </summary>
 public interface IQueryOptions
 {
     /// <summary>
-    /// 選擇的欄位
+    /// Selected fields.
     /// </summary>
     string? Fields { get; set; }
 
     /// <summary>
-    /// 排序欄位 
+    /// Sorting fields.
     /// </summary>
     string? Sort { get; set; }
 }

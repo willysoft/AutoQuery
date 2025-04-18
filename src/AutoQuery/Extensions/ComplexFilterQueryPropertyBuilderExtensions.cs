@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 namespace AutoQuery.Extensions;
 
 /// <summary>
-/// 提供擴充方法來建立篩選查詢屬性建構器。
+/// Provides extension methods for creating filter query property builders.
 /// </summary>
 public static class ComplexFilterQueryPropertyBuilderExtensions
 {
@@ -21,14 +21,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加相等篩選條件。
+    /// Adds an equality filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasEqual<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -36,14 +36,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加不相等篩選條件。
+    /// Adds a not-equal filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasNotEqual<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -51,14 +51,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加大於或等於篩選條件。
+    /// Adds a greater-than-or-equal filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasGreaterThanOrEqual<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -66,14 +66,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加大於篩選條件。
+    /// Adds a greater-than filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasGreaterThan<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -81,14 +81,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加小於或等於篩選條件。
+    /// Adds a less-than-or-equal filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasLessThanOrEqual<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -96,14 +96,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加小於篩選條件。
+    /// Adds a less-than filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasLessThan<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -111,14 +111,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加集合包含篩選條件。
+    /// Adds a collection contains filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasCollectionContains<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -133,14 +133,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加字符串包含篩選條件。
+    /// Adds a string contains filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasStringContains<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -148,14 +148,14 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加字符串開頭篩選條件。
+    /// Adds a string starts-with filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasStringStartsWith<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, LogicalOperator logicalOperator = LogicalOperator.AND)
     {
@@ -163,15 +163,15 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加自定義篩選條件。
+    /// Adds a custom filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="customFilter">自定義篩選表達式。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="customFilter">The custom filter expression.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasCustomFilter<TData, TQueryProperty, TDataProperty>(
         this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder,
         Expression<Func<TQueryProperty, TDataProperty, bool>> customFilter, LogicalOperator logicalOperator = LogicalOperator.AND)
@@ -181,15 +181,15 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加比較篩選條件。
+    /// Adds a comparison filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="comparisonType">比較類型。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="comparisonType">The type of comparison.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     private static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> AddComparisonFilter<TData, TQueryProperty, TDataProperty>(
         ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, ExpressionType comparisonType, LogicalOperator logicalOperator)
     {
@@ -203,15 +203,15 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加字符串篩選條件。
+    /// Adds a string filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="stringMethod">字符串方法。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="stringMethod">The string method.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> AddStringFilter<TData, TQueryProperty, TDataProperty>(
         ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder, MethodInfo stringMethod, LogicalOperator logicalOperator)
@@ -232,13 +232,13 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 創建集合包含條件。
+    /// Creates a collection contains condition.
     /// </summary>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <typeparam name="TDataProperty">數據屬性的類型。</typeparam>
-    /// <param name="parameterA">查詢屬性參數。</param>
-    /// <param name="parameterB">數據屬性參數。</param>
-    /// <returns>集合包含條件表達式。</returns>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="parameterA">The query property parameter.</param>
+    /// <param name="parameterB">The data property parameter.</param>
+    /// <returns>The collection contains condition expression.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static BinaryExpression CreateCollectionContainsCondition<TQueryProperty, TDataProperty>(ParameterExpression parameterA, ParameterExpression parameterB)
     {
@@ -249,7 +249,7 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
             var valueB = Expression.Property(parameterB, "Value");
             var valueTypeB = valueB.Type;
             var method = typeof(ICollection<>).MakeGenericType(valueTypeB).GetMethod(nameof(ICollection<object>.Contains), new[] { valueTypeB })
-                       ?? throw new Exception("未能找到 ICollection<TDataProperty>.Contains 方法。");
+                       ?? throw new Exception("Failed to find ICollection<TDataProperty>.Contains method.");
             var condition = Expression.Call(parameterA, method, valueB);
             return Expression.AndAlso(Expression.AndAlso(notNullA, hasValueB), condition);
         }
@@ -257,7 +257,7 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
         {
             var notNullA = Expression.NotEqual(parameterA, Expression.Default(typeof(TQueryProperty)));
             var method = typeof(ICollection<TDataProperty>).GetMethod(nameof(ICollection<object>.Contains), new[] { typeof(TDataProperty) })
-                       ?? throw new Exception("未能找到 ICollection<TDataProperty>.Contains 方法。");
+                       ?? throw new Exception("Failed to find ICollection<TDataProperty>.Contains method.");
             var condition = Expression.Call(parameterA, method, parameterB);
             return Expression.AndAlso(notNullA, condition);
         }
@@ -266,19 +266,19 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
             var notNullA = Expression.NotEqual(parameterA, Expression.Default(typeof(TQueryProperty)));
             var notNullB = Expression.NotEqual(parameterB, Expression.Default(typeof(TDataProperty)));
             var method = typeof(ICollection<TDataProperty>).GetMethod(nameof(ICollection<object>.Contains), new[] { typeof(TDataProperty) })
-                       ?? throw new Exception("未能找到 ICollection<TDataProperty>.Contains 方法。");
+                       ?? throw new Exception("Failed to find ICollection<TDataProperty>.Contains method.");
             var condition = Expression.Call(parameterA, method, parameterB);
             return Expression.AndAlso(Expression.AndAlso(notNullA, notNullB), condition);
         }
     }
 
     /// <summary>
-    /// 創建比較條件。
+    /// Creates a comparison condition.
     /// </summary>
-    /// <param name="parameterA">查詢屬性參數。</param>
-    /// <param name="parameterB">數據屬性參數。</param>
-    /// <param name="comparisonType">比較類型。</param>
-    /// <returns>比較條件表達式。</returns>
+    /// <param name="parameterA">The query property parameter.</param>
+    /// <param name="parameterB">The data property parameter.</param>
+    /// <param name="comparisonType">The type of comparison.</param>
+    /// <returns>The comparison condition expression.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static BinaryExpression CreateComparisonCondition(ParameterExpression parameterA, ParameterExpression parameterB, ExpressionType comparisonType)
     {
