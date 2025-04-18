@@ -26,6 +26,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoQueryApiDemo", "sample\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoQuery.AspNetCore.Tests", "test\AutoQuery.AspNetCore.Tests\AutoQuery.AspNetCore.Tests.csproj", "{A9125D44-3F97-4251-85F7-B28D07FA7B2D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sandbox", "sandbox", "{75B3287A-5C54-494A-B646-72CFBF9E2FB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoQuery.Benchmark", "sandbox\AutoQuery.Benchmark\AutoQuery.Benchmark.csproj", "{6F332D4E-4C59-40C7-836F-C7344FD9ACD5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +60,10 @@ Global
 		{A9125D44-3F97-4251-85F7-B28D07FA7B2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9125D44-3F97-4251-85F7-B28D07FA7B2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9125D44-3F97-4251-85F7-B28D07FA7B2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F332D4E-4C59-40C7-836F-C7344FD9ACD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F332D4E-4C59-40C7-836F-C7344FD9ACD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F332D4E-4C59-40C7-836F-C7344FD9ACD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F332D4E-4C59-40C7-836F-C7344FD9ACD5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +75,7 @@ Global
 		{AEAB6CC3-1A1D-450D-A368-6A3BAF82A4DE} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{BF0093CA-57E3-4D5F-91B9-46898DFDD0C1} = {E97A2640-E7C7-4C4B-B3E2-311C1B9FDAA4}
 		{A9125D44-3F97-4251-85F7-B28D07FA7B2D} = {5730CC15-795B-43C9-802C-18B3E19B7E22}
+		{6F332D4E-4C59-40C7-836F-C7344FD9ACD5} = {75B3287A-5C54-494A-B646-72CFBF9E2FB2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8FA10855-B537-4BAA-BB5B-6C0FB0BA6F42}
