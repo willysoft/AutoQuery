@@ -18,6 +18,7 @@ var result = users.AsQueryable().ApplyQuery(queryProcessor, new UserQueryOptions
     Fields = "Id,Name",
     Sort = "-Id",
     FilterIds = [3, 4],
+    FilterName = "Alice Johnson"
 }).ToArray();
 
 Console.WriteLine("Filtered Users:");

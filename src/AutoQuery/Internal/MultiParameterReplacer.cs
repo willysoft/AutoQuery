@@ -3,7 +3,7 @@
 namespace AutoQuery.Internal;
 
 /// <summary>
-/// MultiParameterReplacer 類別用於替換表達式中的多個參數。
+/// The MultiParameterReplacer class is used to replace multiple parameters in an expression.
 /// </summary>
 internal class MultiParameterReplacer : ExpressionVisitor
 {
@@ -13,12 +13,12 @@ internal class MultiParameterReplacer : ExpressionVisitor
     private readonly Expression _replacement2;
 
     /// <summary>
-    /// 初始化 MultiParameterReplacer 類別的新實例。
+    /// Initializes a new instance of the MultiParameterReplacer class.
     /// </summary>
-    /// <param name="param1">要替換的第一個參數。</param>
-    /// <param name="replacement1">第一個參數的替換表達式。</param>
-    /// <param name="param2">要替換的第二個參數。</param>
-    /// <param name="replacement2">第二個參數的替換表達式。</param>
+    /// <param name="param1">The first parameter to replace.</param>
+    /// <param name="replacement1">The replacement expression for the first parameter.</param>
+    /// <param name="param2">The second parameter to replace.</param>
+    /// <param name="replacement2">The replacement expression for the second parameter.</param>
     internal MultiParameterReplacer(ParameterExpression param1, Expression replacement1, ParameterExpression param2, Expression replacement2)
     {
         _param1 = param1;
@@ -28,10 +28,10 @@ internal class MultiParameterReplacer : ExpressionVisitor
     }
 
     /// <summary>
-    /// 訪問參數節點並進行替換。
+    /// Visits a parameter node and performs replacement.
     /// </summary>
-    /// <param name="node">要訪問的參數節點。</param>
-    /// <returns>替換後的表達式。</returns>
+    /// <param name="node">The parameter node to visit.</param>
+    /// <returns>The expression after replacement.</returns>
     protected override Expression VisitParameter(ParameterExpression node)
     {
         if (node == _param1) return _replacement1;
