@@ -43,7 +43,29 @@ public static class QueryExtensions
     /// <param name="queryProcessor">The query processor.</param>
     /// <param name="queryOption">The query options.</param>
     /// <returns>The query object with conditions and pagination options applied.</returns>
-    public static PagedResult<TData> ApplyQueryPaged<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
+    public static IQueryable<TData> ApplyQueryPaged<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
+        where TQueryOptions : IQueryPagedOptions
+        where TData : class
+    {
+        var filterExpression = queryProcessor.BuildFilterExpression<TData, TQueryOptions>(queryOption);
+        var selectorExpression = queryProcessor.BuildSelectorExpression<TData, TQueryOptions>(queryOption);
+        if (filterExpression != null)
+            query = query.Where(filterExpression);
+        if (selectorExpression != null)
+            query = query.Select(selectorExpression);
+        return query.ApplySort(queryOption).ApplyPaging(queryOption);
+    }
+
+    /// <summary>
+    /// Applies query conditions and pagination options.
+    /// </summary>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The query object with conditions and pagination options applied.</returns>
+    public static PagedResult<TData> ApplyQueryPagedResult<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
         where TQueryOptions : IQueryPagedOptions
         where TData : class
     {
