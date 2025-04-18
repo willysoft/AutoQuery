@@ -31,7 +31,7 @@ public class UsersController : ControllerBase
     public IActionResult Get(UserQueryOptions queryOptions)
     {
         var result = users.AsQueryable()
-                          .ApplyQueryPaged(_queryProcessor, queryOptions);
+                          .ApplyQueryPagedResult(_queryProcessor, queryOptions);
         return Ok(result);
     }
 }
