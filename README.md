@@ -12,6 +12,12 @@
 - **Pagination and Sorting**: Built-in support for pagination and sorting.
 - **ASP.NET Core Integration**: Middleware support for easy integration into ASP.NET Core projects.
 
+## Benchmark
+
+The benchmark results provide an overview of `AutoQuery`'s performance in handling dynamic queries and filtering. These results can help evaluate its suitability for various application scenarios.
+
+![](imgs/benchmarks.jpg)
+
 ## Installation
 
 ### AutoQuery
