@@ -1,6 +1,6 @@
 # AutoQuery
 
-[![GitHub Actions](https://github.com/willysoft/AutoQuery/workflows/build-debug/badge.svg)](https://github.com/willysoft/AutoQuery/actions) [![GitHub Actions](https://github.com/willysoft/AutoQuery/workflows/build-release/badge.svg)](https://github.com/willysoft/AutoQuery/actions) [![Releases](https://img.shields.io/github/v/release/willysoft/AutoQuery.svg)](https://github.com/willysoft/AutoQuery/releases) [![NuGet](https://img.shields.io/nuget/vpre/AutoQuery.svg)](https://www.nuget.org/packages/AutoQuery/) [![NuGet](https://img.shields.io/nuget/vpre/AutoQuery.AspNetCore.svg)](https://www.nuget.org/packages/AutoQuery.AspNetCore/)
+[![GitHub Actions](https://github.com/willysoft/AutoQuery/workflows/build-debug/badge.svg)](https://github.com/willysoft/AutoQuery/actions) [![GitHub Actions](https://github.com/willysoft/AutoQuery/workflows/build-release/badge.svg)](https://github.com/willysoft/AutoQuery/actions) [![Releases](https://img.shields.io/github/v/release/willysoft/AutoQuery.svg)](https://github.com/willysoft/AutoQuery/releases) [![NuGet](https://img.shields.io/nuget/vpre/AutoQuery.svg)](https://www.nuget.org/packages/AutoQuery/)
 
 `AutoQuery` is a powerful library for .NET that simplifies dynamic query building, filtering, and pagination using expression trees. It provides a flexible and extensible way to handle complex query scenarios. The `AutoQuery.AspNetCore` package extends this functionality with seamless integration into ASP.NET Core applications, offering middleware support and field projection capabilities.
 
