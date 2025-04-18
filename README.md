@@ -96,7 +96,6 @@ dotnet add package AutoQuery.AspNetCore
     4. Example Output:
     ```plaintext
     Filtered Users:
-    4: Bob Brown
     3: Alice Johnson
     ```
 
@@ -165,7 +164,7 @@ dotnet add package AutoQuery.AspNetCore
         public IActionResult Get(UserQueryOptions queryOptions)
         {
             var result = users.AsQueryable()
-                              .ApplyQueryPaged(_queryProcessor, queryOptions);
+                              .ApplyQueryPagedResult(_queryProcessor, queryOptions);
             return Ok(result);
         }
     }
