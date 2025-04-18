@@ -16,6 +16,7 @@ public static class AutoQueryServiceExtensions
     /// 向服務集合中添加查詢建構器服務。
     /// </summary>
     /// <param name="services">服務集合。</param>
+    /// <param name="assembly">要應用配置的程序集。</param>
     /// <returns>更新後的服務集合。</returns>
     public static IServiceCollection AddAutoQuery(this IServiceCollection services, Assembly assembly)
     {

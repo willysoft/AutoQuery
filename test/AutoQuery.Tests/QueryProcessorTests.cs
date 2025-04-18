@@ -121,9 +121,9 @@ public class QueryProcessorTests
 
     public class TestData
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
         public int Age { get; set; }
-        public string Address { get; set; }
+        public string Address { get; set; } = null!;
     }
 
     public class UserQueryConfiguration : IFilterQueryConfiguration<TestQueryOptions, TestData>
