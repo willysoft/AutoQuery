@@ -6,17 +6,17 @@ using System.Runtime.CompilerServices;
 namespace AutoQuery.Extensions;
 
 /// <summary>
-/// 提供擴展方法來處理表達式樹。
+/// Provides extension methods for working with expression trees.
 /// </summary>
 public static class ExpressionExtensions
 {
     /// <summary>
-    /// 替換表達式中的參數。
+    /// Replaces a parameter in an expression.
     /// </summary>
-    /// <param name="oldParam">要替換的舊參數。</param>
-    /// <param name="newParam">新的參數表達式。</param>
-    /// <param name="body">包含參數的表達式主體。</param>
-    /// <returns>替換後的表達式。</returns>
+    /// <param name="oldParam">The old parameter to replace.</param>
+    /// <param name="newParam">The new parameter expression.</param>
+    /// <param name="body">The body of the expression containing the parameter.</param>
+    /// <returns>The expression with the parameter replaced.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Expression ReplaceParameter(ParameterExpression oldParam, Expression newParam, Expression body)
     {
@@ -24,14 +24,14 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 替換表達式中的多個參數。
+    /// Replaces multiple parameters in an expression.
     /// </summary>
-    /// <param name="oldParam1">要替換的舊參數1。</param>
-    /// <param name="newParam1">新的參數表達式1。</param>
-    /// <param name="oldParam2">要替換的舊參數2。</param>
-    /// <param name="newParam2">新的參數表達式2。</param>
-    /// <param name="body">包含參數的表達式主體。</param>
-    /// <returns>替換後的表達式。</returns>
+    /// <param name="oldParam1">The first old parameter to replace.</param>
+    /// <param name="newParam1">The first new parameter expression.</param>
+    /// <param name="oldParam2">The second old parameter to replace.</param>
+    /// <param name="newParam2">The second new parameter expression.</param>
+    /// <param name="body">The body of the expression containing the parameters.</param>
+    /// <returns>The expression with the parameters replaced.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Expression ReplaceParameters(ParameterExpression oldParam1, Expression newParam1, ParameterExpression oldParam2, Expression newParam2, Expression body)
     {
@@ -39,12 +39,12 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 組合兩個表達式，使用指定的邏輯運算符。
+    /// Combines two expressions using the specified logical operator.
     /// </summary>
-    /// <param name="left">左側表達式。</param>
-    /// <param name="right">右側表達式。</param>
-    /// <param name="logical">邏輯運算符。</param>
-    /// <returns>組合後的表達式。</returns>
+    /// <param name="left">The left expression.</param>
+    /// <param name="right">The right expression.</param>
+    /// <param name="logical">The logical operator.</param>
+    /// <returns>The combined expression.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Expression CombineExpressions(Expression left, Expression right, LogicalOperator logical)
     {
@@ -52,13 +52,13 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 獲取成員訪問路徑。
+    /// Gets the member access path.
     /// </summary>
-    /// <param name="lambda">Lambda 表達式。</param>
-    /// <param name="firstLevelOnly">是否僅允許第一層成員。</param>
-    /// <param name="noError">是否在錯誤時返回 null 而不是拋出異常。</param>
-    /// <returns>成員訪問路徑，如果有錯誤且 <paramref name="noError"/> 為 true，則返回 null。</returns>
-    /// <exception cref="ArgumentException">當 <paramref name="firstLevelOnly"/> 為 true 且有多層成員時，或當表達式不是成員訪問時拋出。</exception>
+    /// <param name="lambda">The lambda expression.</param>
+    /// <param name="firstLevelOnly">Whether to allow only first-level members.</param>
+    /// <param name="noError">Whether to return null instead of throwing an exception on error.</param>
+    /// <returns>The member access path, or null if an error occurs and <paramref name="noError"/> is true.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="firstLevelOnly"/> is true and there are multiple levels of members, or if the expression is not a member access.</exception>
     public static string? GetMemberPath(this LambdaExpression lambda, bool firstLevelOnly = false, bool noError = false)
     {
         List<string> list = new List<string>();
@@ -95,10 +95,10 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 判斷 Lambda 表達式是否為身份表達式。
+    /// Determines whether a lambda expression is an identity expression.
     /// </summary>
-    /// <param name="lambda">Lambda 表達式。</param>
-    /// <returns>如果是身份表達式，返回 true；否則返回 false。</returns>
+    /// <param name="lambda">The lambda expression.</param>
+    /// <returns>True if it is an identity expression; otherwise, false.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsIdentity(this LambdaExpression lambda)
     {
@@ -112,11 +112,11 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 修剪表達式中的轉換操作。
+    /// Trims conversion operations from an expression.
     /// </summary>
-    /// <param name="exp">要修剪的表達式。</param>
-    /// <param name="force">是否強制修剪所有轉換操作。</param>
-    /// <returns>修剪後的表達式。</returns>
+    /// <param name="exp">The expression to trim.</param>
+    /// <param name="force">Whether to force trimming all conversion operations.</param>
+    /// <returns>The trimmed expression.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Expression TrimConversion(this Expression exp, bool force = false)
     {
@@ -135,11 +135,11 @@ public static class ExpressionExtensions
     }
 
     /// <summary>
-    /// 判斷類型是否可以從另一個類型引用分配。
+    /// Determines whether a type can be reference-assigned from another type.
     /// </summary>
-    /// <param name="destType">目標類型。</param>
-    /// <param name="srcType">源類型。</param>
-    /// <returns>如果可以引用分配，返回 true；否則返回 false。</returns>
+    /// <param name="destType">The destination type.</param>
+    /// <param name="srcType">The source type.</param>
+    /// <returns>True if reference assignment is possible; otherwise, false.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsReferenceAssignableFrom(this Type destType, Type srcType)
     {

@@ -1,11 +1,11 @@
 ﻿namespace AutoQuery;
 
 /// <summary>
-/// 表示分頁結果的泛型記錄類型。
+/// Represents a generic record type for paginated results.
 /// </summary>
-/// <typeparam name="TData">結果集中包含的數據類型。</typeparam>
-/// <param name="Datas">分頁結果的數據集合，使用 <see cref="IQueryable{T}"/> 表示。</param>
-/// <param name="Page">當前頁碼（從 1 開始）。</param>
-/// <param name="TotalPages">總頁數。</param>
-/// <param name="Count">結果集中數據的總數量。</param>
+/// <typeparam name="TData">The type of data contained in the result set.</typeparam>
+/// <param name="Datas">The data collection of the paginated result, represented as <see cref="IQueryable{T}"/>.</param>
+/// <param name="Page">The current page number (starting from 1).</param>
+/// <param name="TotalPages">The total number of pages.</param>
+/// <param name="Count">The total number of data items in the result set.</param>
 public record PagedResult<TData>(IQueryable<TData> Datas, int Page, int TotalPages, int Count);

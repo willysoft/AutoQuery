@@ -5,19 +5,19 @@ using System.Linq.Expressions;
 namespace AutoQuery;
 
 /// <summary>
-/// 用於構建自定義篩選查詢屬性的建構器類別。
+/// A builder class for constructing custom filter query properties.
 /// </summary>
-/// <typeparam name="TData">數據的類型。</typeparam>
-/// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
+/// <typeparam name="TData">The type of the data.</typeparam>
+/// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
 public class SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> : IFilterExpressionBuilder<TData, TQueryProperty>
 {
     private List<(Expression<Func<TQueryProperty, TData, bool>> Expression, LogicalOperator Logical)> _filterExpressions = new();
 
     /// <summary>
-    /// 添加自定義篩選表達式。
+    /// Adds a custom filter expression.
     /// </summary>
-    /// <param name="filterExpression">篩選表達式。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
+    /// <param name="filterExpression">The filter expression.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
     public void AddFilterExpression(Expression<Func<TQueryProperty, TData, bool>> filterExpression, LogicalOperator logicalOperator)
     {
         _filterExpressions.Add((filterExpression, logicalOperator));

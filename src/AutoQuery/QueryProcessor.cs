@@ -6,7 +6,7 @@ using System.Reflection;
 namespace AutoQuery;
 
 /// <summary>
-/// 提供查詢處理服務。
+/// Provides query processing services.
 /// </summary>
 public class QueryProcessor : IQueryProcessor
 {
@@ -53,11 +53,11 @@ public class QueryProcessor : IQueryProcessor
     }
 
     /// <summary>
-    /// 獲取篩選查詢建構器。
+    /// Gets the filter query builder.
     /// </summary>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <returns>篩選查詢建構器，如果不存在則為 null。</returns>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <returns>The filter query builder, or null if it does not exist.</returns>
     private FilterQueryBuilder<TQueryOptions, TData>? GetFilterQueryBuilder<TQueryOptions, TData>()
     {
         var key = (typeof(TQueryOptions), typeof(TData));
@@ -68,11 +68,11 @@ public class QueryProcessor : IQueryProcessor
     }
 
     /// <summary>
-    /// 添加篩選查詢建構器。
+    /// Adds a filter query builder.
     /// </summary>
-    /// <typeparam name="TQueryOptions">查詢選項的類型。</typeparam>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <param name="builder">篩選查詢建構器。</param>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <param name="builder">The filter query builder.</param>
     public void AddFilterQueryBuilder<TQueryOptions, TData>(FilterQueryBuilder<TQueryOptions, TData> builder)
     {
         var key = (typeof(TQueryOptions), typeof(TData));
@@ -80,9 +80,9 @@ public class QueryProcessor : IQueryProcessor
     }
 
     /// <summary>
-    /// 從指定的程序集應用配置。
+    /// Applies configurations from the specified assembly.
     /// </summary>
-    /// <param name="assembly">程序集。</param>
+    /// <param name="assembly">The assembly.</param>
     public void ApplyConfigurationsFromAssembly(Assembly assembly)
     {
         var configurations = assembly.GetTypes()

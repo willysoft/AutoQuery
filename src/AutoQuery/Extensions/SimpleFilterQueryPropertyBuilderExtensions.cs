@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 namespace AutoQuery.Extensions;
 
 /// <summary>
-/// 提供擴充方法來建立篩選查詢屬性建構器。
+/// Provides extension methods for creating filter query property builders.
 /// </summary>
 public static class SimpleFilterQueryPropertyBuilderExtensions
 {
@@ -15,20 +15,20 @@ public static class SimpleFilterQueryPropertyBuilderExtensions
     static SimpleFilterQueryPropertyBuilderExtensions()
     {
         s_StringContains = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })
-            ?? throw new Exception("未能找到 string.Contains 方法。");
+            ?? throw new Exception("Failed to find string.Contains method.");
         s_StringStartsWith = typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string) })
-            ?? throw new Exception("未能找到 string.StartsWith 方法。");
+            ?? throw new Exception("Failed to find string.StartsWith method.");
     }
 
     /// <summary>
-    /// 添加字符串包含篩選條件。
+    /// Adds a string contains filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="filterKeySelector">數據中的篩選鍵選擇器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="filterKeySelector">The filter key selector in the data.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> HasStringContains<TData, TQueryProperty>(
         this SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> builder,
         Expression<Func<TData, TQueryProperty>> filterKeySelector,
@@ -39,14 +39,14 @@ public static class SimpleFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加字符串開頭篩選條件。
+    /// Adds a string starts-with filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="filterKeySelector">數據中的篩選鍵選擇器。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="filterKeySelector">The filter key selector in the data.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> HasStringStartsWith<TData, TQueryProperty>(
         this SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> builder,
         Expression<Func<TData, TQueryProperty>> filterKeySelector,
@@ -57,14 +57,14 @@ public static class SimpleFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加自定義篩選條件。
+    /// Adds a custom filter condition.
     /// </summary>
-    /// <typeparam name="TData">資料型別。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性型別。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="customFilter">自定義篩選邏輯。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="customFilter">The custom filter logic.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     public static SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> HasCustomFilter<TData, TQueryProperty>(
         this SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> builder,
         Expression<Func<TQueryProperty, TData, bool>> customFilter,
@@ -75,15 +75,15 @@ public static class SimpleFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
-    /// 添加字符串篩選條件。
+    /// Adds a string filter condition.
     /// </summary>
-    /// <typeparam name="TData">數據的類型。</typeparam>
-    /// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
-    /// <param name="builder">篩選查詢屬性建構器。</param>
-    /// <param name="filterKeySelector">數據中的篩選鍵選擇器。</param>
-    /// <param name="stringMethod">字符串方法。</param>
-    /// <param name="logicalOperator">邏輯運算符。</param>
-    /// <returns>更新後的篩選查詢屬性建構器。</returns>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <param name="filterKeySelector">The filter key selector in the data.</param>
+    /// <param name="stringMethod">The string method.</param>
+    /// <param name="logicalOperator">The logical operator.</param>
+    /// <returns>The updated filter query property builder.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> AddStringFilter<TData, TQueryProperty>(
         SimpleFilterQueryPropertyBuilder<TData, TQueryProperty> builder,

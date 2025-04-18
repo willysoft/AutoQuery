@@ -3,16 +3,16 @@
 namespace AutoQuery.Abstractions;
 
 /// <summary>
-/// 定義篩選查詢屬性建構器的介面。
+/// Defines the interface for a filter query property builder.
 /// </summary>
-/// <typeparam name="TData">數據的類型。</typeparam>
-/// <typeparam name="TQueryProperty">查詢屬性的類型。</typeparam>
+/// <typeparam name="TData">The type of the data.</typeparam>
+/// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
 public interface IFilterExpressionBuilder<TData, TQueryProperty>
 {
     /// <summary>
-    /// 構建篩選表達式。
+    /// Builds the filter expression.
     /// </summary>
-    /// <param name="filterValue">篩選屬性的值。</param>
-    /// <returns>篩選表達式。</returns>
+    /// <param name="filterValue">The value of the filter property.</param>
+    /// <returns>The filter expression.</returns>
     Expression<Func<TData, bool>> BuildFilterExpression(TQueryProperty filterValue);
 }

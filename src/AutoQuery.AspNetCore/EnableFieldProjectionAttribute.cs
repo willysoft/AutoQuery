@@ -13,7 +13,7 @@ using System.Text.Json.Serialization;
 namespace AutoQuery.AspNetCore;
 
 /// <summary>
-/// 字段投影屬性，用於在返回結果中僅包含指定的字段。
+/// Field projection attribute used to include only specified fields in the returned result.
 /// </summary>
 public class EnableFieldProjectionAttribute : ActionFilterAttribute
 {
@@ -24,18 +24,18 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     private IQueryOptions? _queryOptions;
 
     /// <summary>
-    /// 在操作執行之前調用，從操作參數中提取 QueryOptions。
+    /// Called before the action is executed to extract QueryOptions from the action parameters.
     /// </summary>
-    /// <param name="context">操作執行上下文。</param>
+    /// <param name="context">The action execution context.</param>
     public override void OnActionExecuting(ActionExecutingContext context)
     {
         _queryOptions = ExtractQueryOptions(context);
     }
 
     /// <summary>
-    /// 在操作執行之後調用，根據指定的字段過濾返回結果。
+    /// Called after the action is executed to filter the returned result based on the specified fields.
     /// </summary>
-    /// <param name="context">操作執行上下文。</param>
+    /// <param name="context">The action execution context.</param>
     public override void OnActionExecuted(ActionExecutedContext context)
     {
         if (_queryOptions == null || string.IsNullOrEmpty(_queryOptions.Fields))
@@ -53,12 +53,12 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 過濾結果，僅包含選擇的字段。
+    /// Filters the result to include only the selected fields.
     /// </summary>
-    /// <param name="value">要過濾的對象。</param>
-    /// <param name="selectedFields">選擇的字段集合。</param>
-    /// <param name="serializerOptions">JSON 序列化選項。</param>
-    /// <returns>過濾後的對象。</returns>
+    /// <param name="value">The object to filter.</param>
+    /// <param name="selectedFields">The set of selected fields.</param>
+    /// <param name="serializerOptions">JSON serialization options.</param>
+    /// <returns>The filtered object.</returns>
     private static object FilterResult(object value, HashSet<string> selectedFields, JsonSerializerOptions serializerOptions)
     {
         if (value is IEnumerable<object> enumerable)
@@ -76,12 +76,12 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 過濾集合類型的結果。
+    /// Filters a collection-type result.
     /// </summary>
-    /// <param name="enumerable">要過濾的集合。</param>
-    /// <param name="selectedFields">選擇的字段集合。</param>
-    /// <param name="serializerOptions">JSON 序列化選項。</param>
-    /// <returns>過濾後的集合。</returns>
+    /// <param name="enumerable">The collection to filter.</param>
+    /// <param name="selectedFields">The set of selected fields.</param>
+    /// <param name="serializerOptions">JSON serialization options.</param>
+    /// <returns>The filtered collection.</returns>
     private static List<Dictionary<string, object?>> FilterEnumerable(IEnumerable<object> enumerable, HashSet<string> selectedFields, JsonSerializerOptions serializerOptions)
     {
         var result = new List<Dictionary<string, object?>>();
@@ -94,13 +94,13 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 過濾單個物件的結果。
+    /// Filters the result of a single object.
     /// </summary>
-    /// <param name="value">要過濾的物件。</param>
-    /// <param name="selectedFields">選擇的字段集合。</param>
-    /// <param name="serializerOptions">JSON 序列化選項。</param>
-    /// <param name="firstLevelOnly">是否僅過濾第一層屬性。</param>
-    /// <returns>過濾後的字典。</returns>
+    /// <param name="value">The object to filter.</param>
+    /// <param name="selectedFields">The set of selected fields.</param>
+    /// <param name="serializerOptions">JSON serialization options.</param>
+    /// <param name="firstLevelOnly">Whether to filter only the first-level properties.</param>
+    /// <returns>The filtered dictionary.</returns>
     private static Dictionary<string, object?> FilterObject(object value, HashSet<string> selectedFields, JsonSerializerOptions serializerOptions, bool firstLevelOnly = false)
     {
         var result = new Dictionary<string, object?>();
@@ -138,20 +138,20 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 從操作上下文中提取 QueryOptions。
+    /// Extracts QueryOptions from the action context.
     /// </summary>
-    /// <param name="context">操作執行上下文。</param>
-    /// <returns>提取的 QueryOptions。</returns>
+    /// <param name="context">The action execution context.</param>
+    /// <returns>The extracted QueryOptions.</returns>
     private static IQueryOptions? ExtractQueryOptions(ActionExecutingContext context)
     {
         return context.ActionArguments.Values.OfType<IQueryOptions>().FirstOrDefault();
     }
 
     /// <summary>
-    /// 解析選擇的字段。
+    /// Parses the selected fields.
     /// </summary>
-    /// <param name="fields">逗號分隔的字段名稱。</param>
-    /// <returns>選擇的字段集合。</returns>
+    /// <param name="fields">Comma-separated field names.</param>
+    /// <returns>The set of selected fields.</returns>
     private static HashSet<string> ParseSelectedFields(string fields)
     {
         return fields.Split(',')
@@ -160,21 +160,21 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 獲取 JSON 序列化選項。
+    /// Gets the JSON serialization options.
     /// </summary>
-    /// <param name="context">操作執行上下文。</param>
-    /// <returns>JSON 序列化選項。</returns>
+    /// <param name="context">The action execution context.</param>
+    /// <returns>The JSON serialization options.</returns>
     private static JsonSerializerOptions GetSerializerOptions(ActionExecutedContext context)
     {
         return context.HttpContext.RequestServices.GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
     }
 
     /// <summary>
-    /// 使用表達樹取得屬性的值。
+    /// Gets the value of a property using expression trees.
     /// </summary>
-    /// <param name="property">屬性信息。</param>
-    /// <param name="instance">對象實例。</param>
-    /// <returns>屬性的值。</returns>
+    /// <param name="property">The property information.</param>
+    /// <param name="instance">The object instance.</param>
+    /// <returns>The value of the property.</returns>
     private static object? GetPropertyValue(PropertyInfo property, object instance)
     {
         if (!_propertyAccessorsCache.TryGetValue(property, out var accessor))
@@ -191,11 +191,11 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 獲取屬性的 JSON 屬性名稱。
+    /// Gets the JSON property name of a property.
     /// </summary>
-    /// <param name="propInfo">屬性信息。</param>
-    /// <param name="serializerOptions">JSON 序列化選項。</param>
-    /// <returns>屬性的 JSON 名稱。</returns>
+    /// <param name="propInfo">The property information.</param>
+    /// <param name="serializerOptions">JSON serialization options.</param>
+    /// <returns>The JSON name of the property.</returns>
     private static string GetJsonPropertyName(PropertyInfo propInfo, JsonSerializerOptions serializerOptions)
     {
         var jsonPropertyNameAttr = _jsonPropertyNameCache[propInfo];
@@ -205,9 +205,9 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 緩存類型的屬性信息。
+    /// Caches the property information of a type.
     /// </summary>
-    /// <param name="type">要緩存的類型。</param>
+    /// <param name="type">The type to cache.</param>
     private static void CacheProperties(Type type)
     {
         if (!_propertyInfoCache.ContainsKey(type))
@@ -224,10 +224,10 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     }
 
     /// <summary>
-    /// 確定狀態碼是否表示成功。
+    /// Determines whether the status code indicates success.
     /// </summary>
-    /// <param name="statusCode">HTTP 狀態碼。</param>
-    /// <returns>如果狀態碼表示成功，則為 true；否則為 false。</returns>
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <returns>True if the status code indicates success; otherwise, false.</returns>
     private static bool IsSuccessStatusCode(int statusCode)
     {
         return statusCode >= 200 && statusCode < 300;
