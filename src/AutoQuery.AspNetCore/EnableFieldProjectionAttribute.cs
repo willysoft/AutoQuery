@@ -99,6 +99,7 @@ public class EnableFieldProjectionAttribute : ActionFilterAttribute
     /// <param name="value">要過濾的物件。</param>
     /// <param name="selectedFields">選擇的字段集合。</param>
     /// <param name="serializerOptions">JSON 序列化選項。</param>
+    /// <param name="firstLevelOnly">是否僅過濾第一層屬性。</param>
     /// <returns>過濾後的字典。</returns>
     private static Dictionary<string, object?> FilterObject(object value, HashSet<string> selectedFields, JsonSerializerOptions serializerOptions, bool firstLevelOnly = false)
     {
