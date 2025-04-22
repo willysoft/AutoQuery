@@ -8,25 +8,30 @@
 	<RootNamespace>AutoQuery.AspNetCore</RootNamespace>
 
 	<!-- NuGet Packaging -->
-	<Id>AutoQuery.AspNetCore</Id>
-	<PackageVersion>$(Version)</PackageVersion>
-	<Company>Willy</Company>
-	<Authors>Willy</Authors>
-	<Copyright>© Willy Wang.</Copyright>
-	<PackageTags>aspnetcore;query;filtering;pagination;middleware</PackageTags>
-	<Description>AutoQuery.AspNetCore extends AutoQuery with seamless integration into ASP.NET Core applications. It enables dynamic query processing, filtering, and pagination with minimal configuration, enhancing API flexibility and performance.</Description>
-	<PackageProjectUrl>https://github.com/willysoft/AutoQuery</PackageProjectUrl>
-	<RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<SignAssembly>true</SignAssembly>
-	<AssemblyOriginatorKeyFile>..\..\opensource.snk</AssemblyOriginatorKeyFile>
-	<IsPackable>true</IsPackable>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Id>AutoQuery.AspNetCore</Id>
+    <PackageVersion>$(Version)</PackageVersion>
+    <Company>Willy</Company>
+    <Authors>Willy</Authors>
+    <Copyright>© Willy Wang.</Copyright>
+    <PackageTags>aspnetcore;query;filtering;pagination;middleware</PackageTags>
+    <Description>AutoQuery.AspNetCore extends AutoQuery with seamless integration into ASP.NET Core applications. It enables dynamic query processing, filtering, and pagination with minimal configuration, enhancing API flexibility and performance.</Description>
+    <PackageProjectUrl>https://github.com/willysoft/AutoQuery</PackageProjectUrl>
+    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\opensource.snk</AssemblyOriginatorKeyFile>
+    <IsPackable>true</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 
   <ItemGroup>
