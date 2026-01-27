@@ -79,7 +79,7 @@ public class QueryExtensionsTests
 
     [Theory]
     [ClassData(typeof(ApplySortTestData))]
-    public void ApplySort_ShouldSortData(List<TestData> data, TestQueryOptions queryOptions, string expectedFirstName)
+    public void ApplySort_ShouldSortData(List<TestData> data, TestQueryOptions queryOptions, int expectedFirstId, string expectedFirstName)
     {
         // Arrange
         var queryableData = data.AsQueryable();
@@ -88,6 +88,7 @@ public class QueryExtensionsTests
         var result = queryableData.ApplySort(queryOptions);
 
         // Assert
+        Assert.Equal(expectedFirstId, result.First().Id);
         Assert.Equal(expectedFirstName, result.First().Name);
     }
 
@@ -289,7 +290,8 @@ public class QueryExtensionsTests
                     new TestData { Id = 1, Name = "B" },
                     new TestData { Id = 2, Name = "A" }
                 },
-                new TestQueryOptions {Sort = "Name"},
+                new TestQueryOptions { Sort = "Name" },
+                2,
                 "A"
             };
             yield return new object[]
@@ -300,6 +302,7 @@ public class QueryExtensionsTests
                     new TestData { Id = 2, Name = "A" }
                 },
                 new TestQueryOptions { Sort = "-Name" },
+                1,
                 "B"
             };
             yield return new object[]
@@ -310,6 +313,7 @@ public class QueryExtensionsTests
                     new TestData { Id = 4, Name = "D" }
                 },
                 new TestQueryOptions { Sort = "Name" },
+                3,
                 "C"
             };
             yield return new object[]
@@ -320,7 +324,44 @@ public class QueryExtensionsTests
                     new TestData { Id = 6, Name = "F" }
                 },
                 new TestQueryOptions { Sort = "-Name" },
+                6,
                 "F"
+            };
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 2, Name = "A" },
+                    new TestData { Id = 1, Name = "A" },
+                    new TestData { Id = 3, Name = "B" }
+                },
+                new TestQueryOptions { Sort = "Name,Id" },
+                1,
+                "A"
+            };
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 1, Name = "A" },
+                    new TestData { Id = 2, Name = "A" },
+                    new TestData { Id = 3, Name = "B" }
+                },
+                new TestQueryOptions { Sort = "Name,-Id" },
+                2,
+                "A"
+            };
+            yield return new object[]
+            {
+                new List<TestData>
+                {
+                    new TestData { Id = 1, Name = "C" },
+                    new TestData { Id = 2, Name = "B" },
+                    new TestData { Id = 2, Name = "A" }
+                },
+                new TestQueryOptions { Sort = "-Id,Name" },
+                2,
+                "A"
             };
         }
 
