@@ -96,29 +96,48 @@ public static class QueryExtensions
         if (string.IsNullOrWhiteSpace(queryOption.Sort))
             return query;
 
-        var sort = queryOption.Sort;
-        var descending = sort.StartsWith("-");
-        var sortBy = descending ? sort.Substring(1) : sort;
-        var cacheKey = $"{typeof(T).FullName}_{sortBy}";
-        var propertyInfo = s_PropertyCache.GetOrAdd(cacheKey, t => typeof(T).GetProperty(sortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
-        if (propertyInfo == null)
-            return query;
+        var sortFields = queryOption.Sort.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var isFirstSort = true;
 
-        var parameter = Expression.Parameter(typeof(T), "entity");
-        var property = Expression.Property(parameter, propertyInfo);
-        var delegateType = typeof(Func<,>).MakeGenericType(typeof(T), propertyInfo.PropertyType);
-        var lambda = Expression.Lambda(delegateType, property, parameter);
+        foreach (var sort in sortFields)
+        {
+            if (string.IsNullOrWhiteSpace(sort))
+                continue;
 
-        string methodName = descending ? "OrderByDescending" : "OrderBy";
-        var resultExpression = Expression.Call(
-            typeof(Queryable),
-            methodName,
-            [typeof(T), propertyInfo.PropertyType],
-            query.Expression,
-            lambda
-        );
+            var descending = sort.StartsWith("-");
+            var sortBy = descending ? sort[1..] : sort;
+            var cacheKey = $"{typeof(T).FullName}_{sortBy}";
+            var propertyInfo = s_PropertyCache.GetOrAdd(cacheKey, _ => typeof(T).GetProperty(sortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
 
-        return query.Provider.CreateQuery<T>(resultExpression);
+            if (propertyInfo == null)
+                continue;
+
+            var parameter = Expression.Parameter(typeof(T), "entity");
+            var property = Expression.Property(parameter, propertyInfo);
+            var delegateType = typeof(Func<,>).MakeGenericType(typeof(T), propertyInfo.PropertyType);
+            var lambda = Expression.Lambda(delegateType, property, parameter);
+
+            string methodName = (isFirstSort, descending) switch
+            {
+                (true, true) => "OrderByDescending",
+                (true, false) => "OrderBy",
+                (false, true) => "ThenByDescending",
+                (false, false) => "ThenBy"
+            };
+
+            var resultExpression = Expression.Call(
+                typeof(Queryable),
+                methodName,
+                [typeof(T), propertyInfo.PropertyType],
+                query.Expression,
+                lambda
+            );
+
+            query = query.Provider.CreateQuery<T>(resultExpression);
+            isFirstSort = false;
+        }
+
+        return query;
     }
 
     /// <summary>
