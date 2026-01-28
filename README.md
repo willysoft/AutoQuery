@@ -9,7 +9,8 @@
 - **Dynamic Query Building**: Generate queries dynamically using expression trees.
 - **Filtering**: Apply flexible filtering logic to refine query results.
 - **Field Projection**: Return only the specified fields to optimize API responses.
-- **Pagination and Sorting**: Built-in support for pagination and sorting.
+- **Pagination and Sorting**: Built-in support for both offset-based and cursor-based pagination, plus sorting.
+- **Cursor-Based Pagination**: Efficient pagination using opaque page tokens for large datasets.
 - **ASP.NET Core Integration**: Middleware support for easy integration into ASP.NET Core projects.
 
 ## Benchmark
@@ -191,6 +192,115 @@ GET /Users?filter[ids]=1&filter[ids]=3&fields=Id,Name&sort=-Id&page=1&pageSize=2
     "page": 1
 }
 ```
+
+## Cursor-Based Pagination
+
+AutoQuery also supports cursor-based pagination, which is more efficient for large datasets and provides consistent results even when data is being modified. Unlike offset-based pagination, cursor-based pagination uses opaque page tokens to track position.
+
+### Benefits of Cursor-Based Pagination
+
+- **Consistent Results**: No duplicate or skipped items when data changes between requests
+- **Better Performance**: More efficient for large datasets as it doesn't require counting or skipping rows
+- **Scalability**: Works well with real-time data and high-volume scenarios
+
+### Using Cursor-Based Pagination
+
+1. Define a query options class implementing `IQueryCursorOptions`:
+    ```csharp
+    public class UserCursorQueryOptions : IQueryCursorOptions
+    {
+        [FromQuery(Name = "filter[name]")]
+        public string? FilterName { get; set; }
+        [FromQuery(Name = "fields")]
+        public string? Fields { get; set; }
+        [FromQuery(Name = "sort")]
+        public string? Sort { get; set; }
+        [FromQuery(Name = "pageToken")]
+        public string? PageToken { get; set; }
+        [FromQuery(Name = "pageSize")]
+        public int? PageSize { get; set; }
+    }
+    ```
+
+2. Configure the cursor key in your filter configuration:
+    ```csharp
+    public class UserCursorQueryConfiguration : IFilterQueryConfiguration<UserCursorQueryOptions, User>
+    {
+        public void Configure(FilterQueryBuilder<UserCursorQueryOptions, User> builder)
+        {
+            // Configure cursor key for pagination
+            builder.HasCursorKey(d => d.Id);
+            
+            // Configure filter properties
+            builder.Property(q => q.FilterName, d => d.Name)
+                .HasEqual();
+        }
+    }
+    ```
+
+3. Create a controller endpoint using cursor pagination:
+    ```csharp
+    [HttpGet("cursor")]
+    [EnableFieldProjection]
+    public IActionResult GetWithCursor(UserCursorQueryOptions queryOptions)
+    {
+        var result = users.AsQueryable()
+                          .ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        return Ok(result);
+    }
+    ```
+
+4. Example Request (First Page):
+```http
+GET /Users/cursor?pageSize=2&sort=id
+```
+
+5. Example Response (First Page):
+```json
+{
+    "datas": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        {
+            "id": 2,
+            "name": "Jane Smith",
+            "email": "jane.smith@example.com"
+        }
+    ],
+    "nextPageToken": "Mg==",
+    "count": 2
+}
+```
+
+6. Example Request (Next Page):
+```http
+GET /Users/cursor?pageSize=2&sort=id&pageToken=Mg==
+```
+
+7. Example Response (Next Page):
+```json
+{
+    "datas": [
+        {
+            "id": 3,
+            "name": "Alice Johnson",
+            "email": "alice.johnson@example.com"
+        },
+        {
+            "id": 4,
+            "name": "Bob Brown",
+            "email": "bob.brown@example.com"
+        }
+    ],
+    "nextPageToken": "NA==",
+    "count": 2
+}
+```
+
+**Note**: When `nextPageToken` is `null`, there are no more results to fetch.
 
 ## Contribution
 
