@@ -10,7 +10,9 @@ public class UserQueryConfiguration : IFilterQueryConfiguration<UserQueryOptions
     public void Configure(FilterQueryBuilder<UserQueryOptions, User> builder)
     {
         builder.Property(q => q.FilterIds, d => d.Id)
-            .HasCollectionContains();
+            .HasCollectionContains()
+            .HasCursorKey(); // Configure Id as the cursor key for cursor-based pagination
+            
         builder.Property(q => q.FilterName, d => d.Name)
             .HasEqual();
     }

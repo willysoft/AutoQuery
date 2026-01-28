@@ -254,6 +254,31 @@ GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
 
 **Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are not calculated for performance reasons. The `nextPageToken` will be `null` when there are no more pages available.
 
+### Configuring Custom Cursor Key
+
+By default, cursor-based pagination uses the `Id` property. You can configure a different property to use as the cursor key using the `HasCursorKey()` method:
+
+```csharp
+public class ProductQueryConfiguration : IFilterQueryConfiguration<ProductQueryOptions, Product>
+{
+    public void Configure(FilterQueryBuilder<ProductQueryOptions, Product> builder)
+    {
+        // Configure SKU as the cursor key instead of Id
+        builder.Property(q => q.FilterSKU, d => d.SKU)
+            .HasEqual()
+            .HasCursorKey();  // SKU will be used for cursor-based pagination
+            
+        builder.Property(q => q.FilterName, d => d.Name)
+            .HasStringContains();
+    }
+}
+```
+
+This is useful when:
+- Your entity uses a different property as the primary identifier (e.g., SKU, OrderNumber, etc.)
+- You want to paginate by a specific sorted field for better performance
+- The cursor property has better indexing characteristics
+
 ## Contribution
 
 Contributions are welcome! Feel free to submit issues or pull requests to improve the project.
