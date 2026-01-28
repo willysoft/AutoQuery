@@ -326,25 +326,47 @@ public static class QueryExtensions
             items = items.Take(pageSize).ToList();
         }
 
+        // Determine if this was backward navigation (check cursor data)
+        var wasBackwardNavigation = cursorData?.FirstId != null && cursorData?.LastId == null;
+
         // Generate next page token
         string? nextPageToken = null;
-        if (hasNextPage && items.Any() && cursorProperty != null)
+        if (items.Any() && cursorProperty != null)
         {
-            var lastItem = items.Last();
-            var lastId = cursorProperty.GetValue(lastItem);
-            var newCursorData = new CursorData(lastId);
-            nextPageToken = PageToken.Encode(newCursorData);
+            // For backward navigation, if there are more items, generate forward token
+            // For forward navigation, generate token if hasNextPage
+            if ((wasBackwardNavigation && hasNextPage) || (!wasBackwardNavigation && hasNextPage))
+            {
+                var lastItem = items.Last();
+                var lastId = cursorProperty.GetValue(lastItem);
+                var newCursorData = new CursorData(lastId);
+                nextPageToken = PageToken.Encode(newCursorData);
+            }
+            else if (wasBackwardNavigation && !hasNextPage)
+            {
+                // If we're going backward and didn't fetch extra items, we still need a next token
+                // to go forward from this position
+                var lastItem = items.Last();
+                var lastId = cursorProperty.GetValue(lastItem);
+                var newCursorData = new CursorData(lastId);
+                nextPageToken = PageToken.Encode(newCursorData);
+            }
         }
 
         // Generate previous page token
         string? previousPageToken = null;
-        if (cursorData?.LastId != null && items.Any() && cursorProperty != null)
+        if (items.Any() && cursorProperty != null)
         {
-            // If we navigated forward from a cursor, we can go back
-            var firstItem = items.First();
-            var firstId = cursorProperty.GetValue(firstItem);
-            var prevCursorData = new CursorData(LastId: null, FirstId: firstId);
-            previousPageToken = PageToken.Encode(prevCursorData);
+            // If we navigated forward from a cursor (LastId exists), we can go back
+            if (cursorData?.LastId != null)
+            {
+                var firstItem = items.First();
+                var firstId = cursorProperty.GetValue(firstItem);
+                var prevCursorData = new CursorData(LastId: null, FirstId: firstId);
+                previousPageToken = PageToken.Encode(prevCursorData);
+            }
+            // If we navigated backward, don't generate previous token if we're at the beginning
+            // (we'd need to track if there are items before the current page)
         }
 
         // For cursor-based pagination, we don't track total count or pages (for performance)
