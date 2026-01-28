@@ -123,6 +123,7 @@ public class QueryExtensionsTests
     {
         public int? Page { get; set; }
         public int? PageSize { get; set; }
+        public string? PageToken { get; set; }
     }
 
     public class ApplyQueryTestData : IEnumerable<object[]>

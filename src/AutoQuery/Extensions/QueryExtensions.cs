@@ -75,6 +75,14 @@ public static class QueryExtensions
             query = query.Where(filterExpression);
         if (selectorExpression != null)
             query = query.Select(selectorExpression);
+        
+        // If PageToken is provided, use cursor-based pagination
+        if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
+        {
+            return query.ApplySort(queryOption).ApplyCursorBasedPaging(queryOption);
+        }
+        
+        // Otherwise, use traditional offset-based pagination
         var count = query.Count();
         var page = queryOption.Page.HasValue ? queryOption.Page.Value : 1;
         var totalPages = queryOption.PageSize.HasValue
@@ -157,5 +165,119 @@ public static class QueryExtensions
         }
 
         return query;
+    }
+
+    /// <summary>
+    /// Applies cursor-based pagination to the query results.
+    /// </summary>
+    /// <typeparam name="T">The type of the entity being queried.</typeparam>
+    /// <param name="query">The query object (must already be sorted).</param>
+    /// <param name="queryOption">The query options containing PageToken and PageSize.</param>
+    /// <returns>A PagedResult with cursor tokens for navigation.</returns>
+    public static PagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption)
+        where T : class
+    {
+        var pageSize = queryOption.PageSize ?? 10; // Default to 10 if not specified
+        
+        // Decode the page token if provided
+        CursorData? cursorData = null;
+        if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
+        {
+            try
+            {
+                cursorData = PageToken.Decode<CursorData>(queryOption.PageToken);
+            }
+            catch
+            {
+                // If token is invalid, start from the beginning
+                cursorData = null;
+            }
+        }
+
+        // Apply cursor filtering if we have cursor data
+        if (cursorData?.LastId != null)
+        {
+            // Get the Id property - assuming entities have an "Id" property
+            var idProperty = s_PropertyCache.GetOrAdd(
+                $"{typeof(T).FullName}_Id",
+                _ => typeof(T).GetProperty("Id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+
+            if (idProperty != null)
+            {
+                var parameter = Expression.Parameter(typeof(T), "entity");
+                var property = Expression.Property(parameter, idProperty);
+                
+                // Handle JsonElement from deserialization
+                object convertedValue;
+                if (cursorData.LastId is System.Text.Json.JsonElement jsonElement)
+                {
+                    convertedValue = ConvertJsonElement(jsonElement, idProperty.PropertyType);
+                }
+                else
+                {
+                    convertedValue = Convert.ChangeType(cursorData.LastId, idProperty.PropertyType);
+                }
+                
+                var cursorIdValue = Expression.Constant(convertedValue, idProperty.PropertyType);
+                var comparison = Expression.GreaterThan(property, cursorIdValue);
+                var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
+                query = query.Where(lambda);
+            }
+        }
+
+        // Fetch one extra item to determine if there's a next page
+        var items = query.Take(pageSize + 1).ToList();
+        var hasNextPage = items.Count > pageSize;
+        
+        // Remove the extra item if present
+        if (hasNextPage)
+        {
+            items = items.Take(pageSize).ToList();
+        }
+
+        // Generate next page token
+        string? nextPageToken = null;
+        if (hasNextPage && items.Any())
+        {
+            var lastItem = items.Last();
+            var idProperty = s_PropertyCache.GetOrAdd(
+                $"{typeof(T).FullName}_Id",
+                _ => typeof(T).GetProperty("Id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+            
+            if (idProperty != null)
+            {
+                var lastId = idProperty.GetValue(lastItem);
+                var newCursorData = new CursorData(lastId);
+                nextPageToken = PageToken.Encode(newCursorData);
+            }
+        }
+
+        // For cursor-based pagination, we don't track total count or pages (for performance)
+        return new PagedResult<T>(
+            items.AsQueryable(), 
+            Page: 0, // Not applicable for cursor-based pagination
+            TotalPages: 0, // Not applicable for cursor-based pagination
+            Count: 0, // Not applicable for cursor-based pagination
+            NextPageToken: nextPageToken,
+            PreviousPageToken: null // Previous tokens would require bi-directional cursor support
+        );
+    }
+
+    /// <summary>
+    /// Converts a JsonElement to the target type.
+    /// </summary>
+    private static object ConvertJsonElement(System.Text.Json.JsonElement element, Type targetType)
+    {
+        return element.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.Number when targetType == typeof(int) => element.GetInt32(),
+            System.Text.Json.JsonValueKind.Number when targetType == typeof(long) => element.GetInt64(),
+            System.Text.Json.JsonValueKind.Number when targetType == typeof(double) => element.GetDouble(),
+            System.Text.Json.JsonValueKind.Number when targetType == typeof(decimal) => element.GetDecimal(),
+            System.Text.Json.JsonValueKind.String when targetType == typeof(string) => element.GetString() ?? "",
+            System.Text.Json.JsonValueKind.String when targetType == typeof(Guid) => element.GetGuid(),
+            System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False when targetType == typeof(bool) => element.GetBoolean(),
+            _ => System.Text.Json.JsonSerializer.Deserialize(element.GetRawText(), targetType) ?? throw new InvalidCastException($"Cannot convert JsonElement to {targetType}")
+        };
     }
 }

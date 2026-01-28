@@ -8,4 +8,12 @@
 /// <param name="Page">The current page number (starting from 1).</param>
 /// <param name="TotalPages">The total number of pages.</param>
 /// <param name="Count">The total number of data items in the result set.</param>
-public record PagedResult<TData>(IQueryable<TData> Datas, int Page, int TotalPages, int Count);
+/// <param name="NextPageToken">The page token for the next page (cursor-based pagination).</param>
+/// <param name="PreviousPageToken">The page token for the previous page (cursor-based pagination).</param>
+public record PagedResult<TData>(
+    IQueryable<TData> Datas, 
+    int Page, 
+    int TotalPages, 
+    int Count,
+    string? NextPageToken = null,
+    string? PreviousPageToken = null);

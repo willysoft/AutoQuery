@@ -15,4 +15,6 @@ public class TestUserQueryOptions : IQueryPagedOptions
     public int? Page { get; set; }
     [FromQuery(Name = "pageSize")]
     public int? PageSize { get; set; }
+    [FromQuery(Name = "pageToken")]
+    public string? PageToken { get; set; }
 }

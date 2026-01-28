@@ -10,4 +10,5 @@ public class UserQueryOptions : IQueryPagedOptions
     public string? Sort { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
+    public string? PageToken { get; set; }
 }
