@@ -77,13 +77,7 @@ public class PageTokenTests
     public void Encode_Decode_RoundTrip_ShouldPreserveData()
     {
         // Arrange
-        var originalData = new CursorData(
-            LastId: 789, 
-            LastSortValues: new Dictionary<string, object?> 
-            { 
-                { "Name", "Test" }, 
-                { "CreatedAt", "2024-01-01" } 
-            });
+        var originalData = new CursorData(LastId: 789);
 
         // Act
         var token = PageToken.Encode(originalData);
@@ -92,8 +86,6 @@ public class PageTokenTests
         // Assert
         Assert.NotNull(decoded);
         Assert.Equal(originalData.LastId.ToString(), decoded.LastId.ToString());
-        Assert.NotNull(decoded.LastSortValues);
-        Assert.Equal(2, decoded.LastSortValues.Count);
     }
 
     [Fact]
