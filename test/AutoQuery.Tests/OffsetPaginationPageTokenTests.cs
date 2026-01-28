@@ -101,8 +101,8 @@ public class OffsetPaginationPageTokenTests
         // Assert
         Assert.Equal(2, cursorPage.Datas.Count());
         Assert.Equal(3, cursorPage.Datas.First().Id);
-        Assert.Equal(0, cursorPage.Page); // Cursor mode doesn't use page number
-        Assert.Equal(0, cursorPage.TotalPages); // Cursor mode doesn't calculate total
+        Assert.Null(cursorPage.Page); // Cursor mode doesn't use page number
+        Assert.Null(cursorPage.TotalPages); // Cursor mode doesn't calculate total
     }
 
     [Fact]

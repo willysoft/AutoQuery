@@ -372,9 +372,9 @@ public static class QueryExtensions
         // For cursor-based pagination, we don't track total count or pages (for performance)
         return new PagedResult<T>(
             items.AsQueryable(), 
-            Page: 0, // Not applicable for cursor-based pagination
-            TotalPages: 0, // Not applicable for cursor-based pagination
-            Count: 0, // Not applicable for cursor-based pagination
+            Page: null, // Not applicable for cursor-based pagination
+            TotalPages: null, // Not applicable for cursor-based pagination
+            Count: null, // Not applicable for cursor-based pagination
             NextPageToken: nextPageToken,
             PreviousPageToken: previousPageToken
         );

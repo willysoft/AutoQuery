@@ -255,15 +255,15 @@ GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
             "name": "Bob Brown"
         }
     ],
-    "count": 0,
-    "totalPages": 0,
-    "page": 0,
+    "count": null,
+    "totalPages": null,
+    "page": null,
     "nextPageToken": "eyJMYXN0SWQiOjR9",
     "previousPageToken": null
 }
 ```
 
-**Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are not calculated for performance reasons. The `nextPageToken` will be `null` when there are no more pages available.
+**Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are set to `null` since these metrics are not applicable and calculating them would defeat the performance benefits of cursor-based pagination. The `nextPageToken` will be `null` when there are no more pages available.
 
 #### Bi-directional Navigation
 
@@ -273,6 +273,9 @@ Cursor-based pagination supports both forward and backward navigation:
 // Page 2 response includes both navigation tokens
 {
   "datas": [...],
+  "page": null,
+  "totalPages": null,
+  "count": null,
   "nextPageToken": "eyJMYXN0SWQiOjQsIkZpcnN0SWQiOm51bGx9",       // Navigate forward
   "previousPageToken": "eyJMYXN0SWQiOm51bGwsIkZpcnN0SWQiOjN9"  // Navigate backward
 }
@@ -287,6 +290,9 @@ The response will include a `nextPageToken` to allow forward navigation again:
 ```json
 {
   "datas": [{"id": 1}, {"id": 2}],
+  "page": null,
+  "totalPages": null,
+  "count": null,
   "nextPageToken": "eyJMYXN0SWQiOjIsIkZpcnN0SWQiOm51bGx9",  // Can go forward
   "previousPageToken": null  // First page, can't go back further
 }
