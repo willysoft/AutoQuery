@@ -158,4 +158,105 @@ public static class QueryExtensions
 
         return query;
     }
+
+    /// <summary>
+    /// Applies query conditions and cursor-based pagination.
+    /// </summary>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The cursor-based paginated result.</returns>
+    public static CursorPagedResult<TData> ApplyQueryCursorPaged<TData, TQueryOptions>(
+        this IQueryable<TData> query, 
+        IQueryProcessor queryProcessor, 
+        TQueryOptions queryOption)
+        where TQueryOptions : IQueryCursorOptions
+        where TData : class
+    {
+        var filterExpression = queryProcessor.BuildFilterExpression<TData, TQueryOptions>(queryOption);
+        var selectorExpression = queryProcessor.BuildSelectorExpression<TData, TQueryOptions>(queryOption);
+        
+        if (filterExpression != null)
+            query = query.Where(filterExpression);
+        
+        if (selectorExpression != null)
+            query = query.Select(selectorExpression);
+
+        query = query.ApplySort(queryOption);
+
+        // Get cursor key selector from the query processor
+        var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
+        
+        if (cursorKeySelector == null)
+            throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
+
+        // Apply cursor-based filtering if page token is provided
+        if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
+        {
+            query = ApplyCursorFilter(query, cursorKeySelector, queryOption.PageToken);
+        }
+
+        // Fetch one extra item to determine if there are more results
+        var pageSize = queryOption.PageSize ?? 10;
+        var items = query.Take(pageSize + 1).ToList();
+
+        // Determine if there are more results and generate next page token
+        string? nextPageToken = null;
+        var hasMore = items.Count > pageSize;
+        
+        if (hasMore)
+        {
+            items = items.Take(pageSize).ToList();
+            var lastItem = items.Last();
+            var cursorValue = GetCursorValue(lastItem, cursorKeySelector);
+            nextPageToken = PageToken.Encode(cursorValue);
+        }
+
+        return new CursorPagedResult<TData>(items.AsQueryable(), nextPageToken, items.Count);
+    }
+
+    /// <summary>
+    /// Applies cursor-based filtering to the query.
+    /// </summary>
+    private static IQueryable<TData> ApplyCursorFilter<TData>(
+        IQueryable<TData> query, 
+        LambdaExpression cursorKeySelector, 
+        string pageToken)
+    {
+        // Decode the cursor value
+        var cursorKeySelectorTyped = (Expression<Func<TData, object>>)Expression.Lambda(
+            Expression.Convert(cursorKeySelector.Body, typeof(object)),
+            cursorKeySelector.Parameters[0]
+        );
+        
+        var returnType = ((cursorKeySelector.Body as MemberExpression)?.Type) 
+            ?? ((cursorKeySelector.Body as UnaryExpression)?.Operand as MemberExpression)?.Type
+            ?? typeof(object);
+
+        var decodeMethod = typeof(PageToken).GetMethod(nameof(PageToken.Decode))!.MakeGenericMethod(returnType);
+        var cursorValue = decodeMethod.Invoke(null, new object[] { pageToken });
+
+        if (cursorValue == null)
+            return query;
+
+        // Build the filter expression: entity => entity.CursorKey > cursorValue
+        var parameter = Expression.Parameter(typeof(TData), "entity");
+        var cursorProperty = Expression.Invoke(cursorKeySelector, parameter);
+        var constant = Expression.Constant(cursorValue, returnType);
+        var greaterThan = Expression.GreaterThan(cursorProperty, constant);
+        var lambda = Expression.Lambda<Func<TData, bool>>(greaterThan, parameter);
+
+        return query.Where(lambda);
+    }
+
+    /// <summary>
+    /// Gets the cursor value from an entity.
+    /// </summary>
+    private static object GetCursorValue<TData>(TData entity, LambdaExpression cursorKeySelector)
+    {
+        var compiled = cursorKeySelector.Compile();
+        return compiled.DynamicInvoke(entity)!;
+    }
 }

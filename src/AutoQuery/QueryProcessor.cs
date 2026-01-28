@@ -109,4 +109,16 @@ public class QueryProcessor : IQueryProcessor
             }
         }
     }
+
+    /// <summary>
+    /// Gets the cursor key selector for cursor-based pagination.
+    /// </summary>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <returns>The cursor key selector expression, or null if not configured.</returns>
+    public LambdaExpression? GetCursorKeySelector<TQueryOptions, TData>()
+    {
+        var filterQueryBuilder = GetFilterQueryBuilder<TQueryOptions, TData>();
+        return filterQueryBuilder?.GetCursorKeySelector();
+    }
 }
