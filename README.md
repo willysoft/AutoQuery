@@ -44,7 +44,7 @@ dotnet add package AutoQuery.AspNetCore
 AutoQuery returns different result types based on the pagination mode to keep API responses clean:
 
 - **`OffsetPagedResult<TData>`** - For offset-based pagination
-  - Contains: `Datas`, `Page`, `TotalPages`, `Count`, `NextPageToken` (optional)
+  - Contains: `Datas`, `Page`, `TotalPages`, `Count`
   - Used when querying with `page` parameter
   
 - **`CursorPagedResult<TData>`** - For cursor-based pagination
@@ -56,7 +56,7 @@ AutoQuery returns different result types based on the pagination mode to keep AP
   - Base interface implemented by both result types
   - Contains only `Datas` property
 
-**Why separate types?** Each pagination mode only returns relevant fields, eliminating null fields and reducing API response noise.
+**Why separate types?** Each pagination mode only returns relevant fields, eliminating unnecessary fields and reducing API response noise.
 
 ### Pagination Interface Options
 

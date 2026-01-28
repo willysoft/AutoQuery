@@ -8,10 +8,8 @@ namespace AutoQuery;
 /// <param name="Page">The current page number (starting from 1).</param>
 /// <param name="TotalPages">The total number of pages.</param>
 /// <param name="Count">The total number of data items in the result set.</param>
-/// <param name="NextPageToken">Optional page token for switching to cursor-based pagination. Null when not available.</param>
 public record OffsetPagedResult<TData>(
     IQueryable<TData> Datas,
     int Page,
     int TotalPages,
-    int Count,
-    string? NextPageToken = null) : IPagedResult<TData>;
+    int Count) : IPagedResult<TData>;

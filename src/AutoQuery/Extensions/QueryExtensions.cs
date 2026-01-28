@@ -92,15 +92,7 @@ public static class QueryExtensions
         var sortedQuery = query.ApplySort(queryOption);
         var pagedQuery = sortedQuery.ApplyPaging(queryOption);
         
-        // Generate next page token if there are more pages and we have a cursor key configured
-        string? nextPageToken = null;
-        if (queryOption.PageSize.HasValue && page < totalPages)
-        {
-            var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
-            nextPageToken = GeneratePageToken(pagedQuery, cursorKeySelector);
-        }
-        
-        return new OffsetPagedResult<TData>(pagedQuery, page, totalPages, count, nextPageToken);
+        return new OffsetPagedResult<TData>(pagedQuery, page, totalPages, count);
     }
 
     /// <summary>
