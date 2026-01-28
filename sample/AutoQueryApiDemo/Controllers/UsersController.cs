@@ -34,4 +34,13 @@ public class UsersController : ControllerBase
                           .ApplyQueryPagedResult(_queryProcessor, queryOptions);
         return Ok(result);
     }
+
+    [HttpGet("cursor")]
+    [EnableFieldProjection]
+    public IActionResult GetWithCursor(UserCursorQueryOptions queryOptions)
+    {
+        var result = users.AsQueryable()
+                          .ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        return Ok(result);
+    }
 }
