@@ -39,6 +39,25 @@ dotnet add package AutoQuery.AspNetCore
 
 ## Getting Started
 
+### Pagination Result Types
+
+AutoQuery returns different result types based on the pagination mode to keep API responses clean:
+
+- **`OffsetPagedResult<TData>`** - For offset-based pagination
+  - Contains: `Datas`, `Page`, `TotalPages`, `Count`, `NextPageToken` (optional)
+  - Used when querying with `page` parameter
+  
+- **`CursorPagedResult<TData>`** - For cursor-based pagination
+  - Contains: `Datas`, `NextPageToken`, `PreviousPageToken`
+  - Used when querying with `pageToken` parameter
+  - No page numbers or counts for optimal performance
+
+- **`IPagedResult<TData>`** - Common interface
+  - Base interface implemented by both result types
+  - Contains only `Datas` property
+
+**Why separate types?** Each pagination mode only returns relevant fields, eliminating null fields and reducing API response noise.
+
 ### Pagination Interface Options
 
 AutoQuery provides three pagination interfaces to choose from:
@@ -53,7 +72,7 @@ AutoQuery provides three pagination interfaces to choose from:
 
 1. Define a query options class implementing the appropriate pagination interface:
     ```csharp
-    // For offset-based pagination
+    // For both offset and cursor pagination
     public class UserQueryOptions : IQueryPagedOptions
     {
         public int[]? FilterIds { get; set; }
@@ -188,7 +207,7 @@ AutoQuery provides three pagination interfaces to choose from:
 ```http
 GET /Users?filter[ids]=1&filter[ids]=3&fields=Id,Name&sort=-Id&page=1&pageSize=2
 ```
-6. Example Response:
+6. Example Response (OffsetPagedResult):
 ```json
 {
     "datas": [
@@ -201,22 +220,22 @@ GET /Users?filter[ids]=1&filter[ids]=3&fields=Id,Name&sort=-Id&page=1&pageSize=2
             "name": "John Doe"
         }
     ],
-    "count": 2,
+    "page": 1,
     "totalPages": 1,
-    "page": 1
+    "count": 2
 }
 ```
 
 ### Cursor-Based Pagination
 
-AutoQuery also supports cursor-based pagination using opaque page tokens. This approach is more efficient for large datasets and provides consistent results even when data changes between requests.
+AutoQuery supports cursor-based pagination using opaque page tokens, which returns `CursorPagedResult<TData>`. This approach is more efficient for large datasets and provides consistent results even when data changes between requests.
 
 1. Example Request (First Page):
 ```http
 GET /Users?pageSize=2&sort=Id
 ```
 
-2. Example Response:
+2. Example Response (CursorPagedResult):
 ```json
 {
     "datas": [
@@ -229,20 +248,18 @@ GET /Users?pageSize=2&sort=Id
             "name": "Jane Smith"
         }
     ],
-    "count": 0,
-    "totalPages": 0,
-    "page": 0,
-    "nextPageToken": "eyJMYXN0SWQiOjJ9",
-    "previousPageToken": null
+    "nextPageToken": "eyJMYXN0SWQiOjJ9"
 }
 ```
+
+**Note**: Offset-based pagination (using `page` parameter) returns `OffsetPagedResult<TData>` with page metrics, while cursor-based pagination returns `CursorPagedResult<TData>` with only navigation tokens - no unnecessary fields!
 
 3. Example Request (Next Page using token):
 ```http
 GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
 ```
 
-4. Example Response:
+4. Example Response (CursorPagedResult):
 ```json
 {
     "datas": [
@@ -255,27 +272,21 @@ GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
             "name": "Bob Brown"
         }
     ],
-    "count": null,
-    "totalPages": null,
-    "page": null,
     "nextPageToken": "eyJMYXN0SWQiOjR9",
-    "previousPageToken": null
+    "previousPageToken": "eyJMYXN0SWQiOm51bGwsIkZpcnN0SWQiOjN9"
 }
 ```
 
-**Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are set to `null` since these metrics are not applicable and calculating them would defeat the performance benefits of cursor-based pagination. The `nextPageToken` will be `null` when there are no more pages available.
+**Note**: Cursor-based pagination (`CursorPagedResult`) only includes navigation tokens - no page numbers or counts. This keeps responses clean and avoids expensive count queries that would defeat the performance benefits of cursor pagination.
 
 #### Bi-directional Navigation
 
 Cursor-based pagination supports both forward and backward navigation:
 
 ```json
-// Page 2 response includes both navigation tokens
+// Page 2 response (CursorPagedResult) includes both navigation tokens
 {
   "datas": [...],
-  "page": null,
-  "totalPages": null,
-  "count": null,
   "nextPageToken": "eyJMYXN0SWQiOjQsIkZpcnN0SWQiOm51bGx9",       // Navigate forward
   "previousPageToken": "eyJMYXN0SWQiOm51bGwsIkZpcnN0SWQiOjN9"  // Navigate backward
 }
@@ -290,9 +301,6 @@ The response will include a `nextPageToken` to allow forward navigation again:
 ```json
 {
   "datas": [{"id": 1}, {"id": 2}],
-  "page": null,
-  "totalPages": null,
-  "count": null,
   "nextPageToken": "eyJMYXN0SWQiOjIsIkZpcnN0SWQiOm51bGx9",  // Can go forward
   "previousPageToken": null  // First page, can't go back further
 }
