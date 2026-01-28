@@ -96,6 +96,35 @@ public static class QueryExtensions
     }
 
     /// <summary>
+    /// Applies query conditions and cursor-based pagination options.
+    /// </summary>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor.</param>
+    /// <param name="queryOption">The query options for cursor-based pagination.</param>
+    /// <returns>The query object with conditions and cursor-based pagination applied.</returns>
+    /// <remarks>
+    /// This method is specifically designed for cursor-based pagination and will always return
+    /// a <see cref="CursorPagedResult{TData}"/> with navigation tokens, even on the first request
+    /// (when no pageToken is provided).
+    /// </remarks>
+    public static CursorPagedResult<TData> ApplyQueryCursorPagedResult<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
+        where TQueryOptions : IQueryCursorPagedOptions
+        where TData : class
+    {
+        var filterExpression = queryProcessor.BuildFilterExpression<TData, TQueryOptions>(queryOption);
+        var selectorExpression = queryProcessor.BuildSelectorExpression<TData, TQueryOptions>(queryOption);
+        if (filterExpression != null)
+            query = query.Where(filterExpression);
+        if (selectorExpression != null)
+            query = query.Select(selectorExpression);
+        
+        var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
+        return query.ApplySort(queryOption).ApplyCursorBasedPaging(queryOption, cursorKeySelector);
+    }
+
+    /// <summary>
     /// Applies sorting to the query results.
     /// </summary>
     /// <typeparam name="T">The type of the entity being queried.</typeparam>
@@ -158,7 +187,7 @@ public static class QueryExtensions
     /// <param name="query">The query object.</param>
     /// <param name="queryOption">The query options.</param>
     /// <returns>The query object with pagination applied.</returns>
-    public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption)
+    public static IQueryable<T> ApplyPaging<T>(this IQueryable<T> query, IQueryOffsetPagedOptions queryOption)
     {
         if (queryOption.PageSize.HasValue)
         {
@@ -183,7 +212,7 @@ public static class QueryExtensions
     /// Without sorting, results may be inconsistent across page requests.
     /// Maximum page size is limited to 1000 for performance reasons.
     /// </remarks>
-    public static CursorPagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
+    public static CursorPagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryCursorPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
         where T : class
     {
         // Validate and limit page size
@@ -367,6 +396,64 @@ public static class QueryExtensions
             NextPageToken: nextPageToken,
             PreviousPageToken: previousPageToken
         );
+    }
+
+    /// <summary>
+    /// Applies cursor-based pagination to the query results (backward compatibility overload).
+    /// </summary>
+    /// <typeparam name="T">The type of the entity being queried.</typeparam>
+    /// <param name="query">The query object (must already be sorted).</param>
+    /// <param name="queryOption">The query options containing PageToken and PageSize.</param>
+    /// <param name="cursorKeySelector">Optional cursor key selector. If not provided, uses "Id" property.</param>
+    /// <returns>A CursorPagedResult with cursor tokens for navigation.</returns>
+    /// <remarks>
+    /// This overload is provided for backward compatibility with IQueryPagedOptions.
+    /// For new code, use the overload that accepts IQueryCursorPagedOptions.
+    /// </remarks>
+    [Obsolete("Use the overload that accepts IQueryCursorPagedOptions instead.")]
+    public static CursorPagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
+        where T : class
+    {
+        // Delegate to the main implementation by casting to IQueryCursorPagedOptions
+        // Since IQueryPagedOptions now has PageToken property, we can use it directly
+        return ApplyCursorBasedPaging(query, (IQueryCursorPagedOptions)new CursorPagedOptionsAdapter(queryOption), cursorKeySelector);
+    }
+
+    /// <summary>
+    /// Adapter to convert IQueryPagedOptions to IQueryCursorPagedOptions for backward compatibility.
+    /// </summary>
+    private class CursorPagedOptionsAdapter : IQueryCursorPagedOptions
+    {
+        private readonly IQueryPagedOptions _source;
+
+        public CursorPagedOptionsAdapter(IQueryPagedOptions source)
+        {
+            _source = source;
+        }
+
+        public int? PageSize
+        {
+            get => _source.PageSize;
+            set => _source.PageSize = value;
+        }
+
+        public string? PageToken
+        {
+            get => _source.PageToken;
+            set => _source.PageToken = value;
+        }
+
+        public string? Fields
+        {
+            get => _source.Fields;
+            set => _source.Fields = value;
+        }
+
+        public string? Sort
+        {
+            get => _source.Sort;
+            set => _source.Sort = value;
+        }
     }
 
     /// <summary>
