@@ -243,7 +243,7 @@ public static class QueryExtensions
         }
 
         // Apply cursor filtering if we have cursor data and a valid cursor property
-        if (cursorData?.LastId != null && cursorProperty != null)
+        if (cursorData != null && cursorProperty != null)
         {
             var parameter = Expression.Parameter(typeof(T), "entity");
             var property = Expression.Property(parameter, cursorProperty);
@@ -252,45 +252,68 @@ public static class QueryExtensions
             var propertyType = cursorProperty.PropertyType;
             var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
             
-            // Handle JsonElement from deserialization
-            object convertedValue;
-            if (cursorData.LastId is System.Text.Json.JsonElement jsonElement)
-            {
-                convertedValue = ConvertJsonElement(jsonElement, underlyingType);
-            }
-            else
-            {
-                convertedValue = Convert.ChangeType(cursorData.LastId, underlyingType);
-            }
+            // Check if this is forward or backward pagination
+            var isBackwardPagination = cursorData.FirstId != null && cursorData.LastId == null;
+            var cursorValue = isBackwardPagination ? cursorData.FirstId : cursorData.LastId;
             
-            // Create constant with the correct type
-            var cursorIdValue = Expression.Constant(convertedValue, underlyingType);
-            
-            // Convert property to underlying type if it's nullable
-            Expression propertyExpression = property;
-            if (propertyType != underlyingType)
+            if (cursorValue != null)
             {
-                propertyExpression = Expression.Convert(property, underlyingType);
+                // Handle JsonElement from deserialization
+                object convertedValue;
+                if (cursorValue is System.Text.Json.JsonElement jsonElement)
+                {
+                    convertedValue = ConvertJsonElement(jsonElement, underlyingType);
+                }
+                else
+                {
+                    convertedValue = Convert.ChangeType(cursorValue, underlyingType);
+                }
+                
+                // Create constant with the correct type
+                var cursorIdValue = Expression.Constant(convertedValue, underlyingType);
+                
+                // Convert property to underlying type if it's nullable
+                Expression propertyExpression = property;
+                if (propertyType != underlyingType)
+                {
+                    propertyExpression = Expression.Convert(property, underlyingType);
+                }
+                
+                // Build comparison expression based on type
+                Expression comparison;
+                if (underlyingType == typeof(string))
+                {
+                    // For strings, use String.CompareTo
+                    var compareToMethod = typeof(string).GetMethod(nameof(string.CompareTo), new[] { typeof(string) })
+                        ?? throw new InvalidOperationException("CompareTo method not found on string type.");
+                    var compareCall = Expression.Call(propertyExpression, compareToMethod, cursorIdValue);
+                    
+                    // For backward pagination, use LessThan; for forward, use GreaterThan
+                    if (isBackwardPagination)
+                    {
+                        comparison = Expression.LessThan(compareCall, Expression.Constant(0));
+                    }
+                    else
+                    {
+                        comparison = Expression.GreaterThan(compareCall, Expression.Constant(0));
+                    }
+                }
+                else
+                {
+                    // For numeric types, use direct comparison
+                    if (isBackwardPagination)
+                    {
+                        comparison = Expression.LessThan(propertyExpression, cursorIdValue);
+                    }
+                    else
+                    {
+                        comparison = Expression.GreaterThan(propertyExpression, cursorIdValue);
+                    }
+                }
+                
+                var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
+                query = query.Where(lambda);
             }
-            
-            // Build comparison expression based on type
-            Expression comparison;
-            if (underlyingType == typeof(string))
-            {
-                // For strings, use String.CompareTo > 0
-                var compareToMethod = typeof(string).GetMethod(nameof(string.CompareTo), new[] { typeof(string) })
-                    ?? throw new InvalidOperationException("CompareTo method not found on string type.");
-                var compareCall = Expression.Call(propertyExpression, compareToMethod, cursorIdValue);
-                comparison = Expression.GreaterThan(compareCall, Expression.Constant(0));
-            }
-            else
-            {
-                // For numeric types, use direct GreaterThan
-                comparison = Expression.GreaterThan(propertyExpression, cursorIdValue);
-            }
-            
-            var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
-            query = query.Where(lambda);
         }
 
         // Fetch one extra item to determine if there's a next page
@@ -313,6 +336,17 @@ public static class QueryExtensions
             nextPageToken = PageToken.Encode(newCursorData);
         }
 
+        // Generate previous page token
+        string? previousPageToken = null;
+        if (cursorData?.LastId != null && items.Any() && cursorProperty != null)
+        {
+            // If we navigated forward from a cursor, we can go back
+            var firstItem = items.First();
+            var firstId = cursorProperty.GetValue(firstItem);
+            var prevCursorData = new CursorData(LastId: null, FirstId: firstId);
+            previousPageToken = PageToken.Encode(prevCursorData);
+        }
+
         // For cursor-based pagination, we don't track total count or pages (for performance)
         return new PagedResult<T>(
             items.AsQueryable(), 
@@ -320,7 +354,7 @@ public static class QueryExtensions
             TotalPages: 0, // Not applicable for cursor-based pagination
             Count: 0, // Not applicable for cursor-based pagination
             NextPageToken: nextPageToken,
-            PreviousPageToken: null // Previous tokens would require bi-directional cursor support
+            PreviousPageToken: previousPageToken
         );
     }
 
