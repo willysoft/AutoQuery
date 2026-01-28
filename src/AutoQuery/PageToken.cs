@@ -40,7 +40,25 @@ public static class PageToken
         {
             var bytes = Convert.FromBase64String(pageToken);
             var valueString = Encoding.UTF8.GetString(bytes);
-            return (T)Convert.ChangeType(valueString, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
+            
+            var targetType = typeof(T);
+            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            // Handle common cursor key types explicitly
+            if (underlyingType == typeof(Guid))
+            {
+                return (T)(object)Guid.Parse(valueString);
+            }
+            if (underlyingType == typeof(DateTime))
+            {
+                return (T)(object)DateTime.Parse(valueString, System.Globalization.CultureInfo.InvariantCulture);
+            }
+            if (underlyingType == typeof(DateTimeOffset))
+            {
+                return (T)(object)DateTimeOffset.Parse(valueString, System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return (T)Convert.ChangeType(valueString, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
         }
         catch (Exception ex)
         {

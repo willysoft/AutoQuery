@@ -184,13 +184,14 @@ public static class QueryExtensions
         if (selectorExpression != null)
             query = query.Select(selectorExpression);
 
-        query = query.ApplySort(queryOption);
-
         // Get cursor key selector from the query processor
         var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
         
         if (cursorKeySelector == null)
             throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
+
+        // Apply sorting - cursor pagination requires consistent ordering
+        query = query.ApplySort(queryOption);
 
         // Apply cursor-based filtering if page token is provided
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
@@ -211,10 +212,12 @@ public static class QueryExtensions
             items = items.Take(pageSize).ToList();
             var lastItem = items.Last();
             var cursorValue = GetCursorValue(lastItem, cursorKeySelector);
+            if (cursorValue == null)
+                throw new InvalidOperationException($"Cursor key value cannot be null for {typeof(TData).Name}.");
             nextPageToken = PageToken.Encode(cursorValue);
         }
 
-        return new CursorPagedResult<TData>(items.AsQueryable(), nextPageToken, items.Count);
+        return new CursorPagedResult<TData>(items, nextPageToken, items.Count);
     }
 
     /// <summary>
@@ -225,12 +228,6 @@ public static class QueryExtensions
         LambdaExpression cursorKeySelector, 
         string pageToken)
     {
-        // Decode the cursor value
-        var cursorKeySelectorTyped = (Expression<Func<TData, object>>)Expression.Lambda(
-            Expression.Convert(cursorKeySelector.Body, typeof(object)),
-            cursorKeySelector.Parameters[0]
-        );
-        
         var returnType = ((cursorKeySelector.Body as MemberExpression)?.Type) 
             ?? ((cursorKeySelector.Body as UnaryExpression)?.Operand as MemberExpression)?.Type
             ?? typeof(object);
@@ -239,7 +236,7 @@ public static class QueryExtensions
         var cursorValue = decodeMethod.Invoke(null, new object[] { pageToken });
 
         if (cursorValue == null)
-            return query;
+            throw new InvalidOperationException("Decoded cursor value cannot be null.");
 
         // Build the filter expression: entity => entity.CursorKey > cursorValue
         var parameter = Expression.Parameter(typeof(TData), "entity");
@@ -254,9 +251,9 @@ public static class QueryExtensions
     /// <summary>
     /// Gets the cursor value from an entity.
     /// </summary>
-    private static object GetCursorValue<TData>(TData entity, LambdaExpression cursorKeySelector)
+    private static object? GetCursorValue<TData>(TData entity, LambdaExpression cursorKeySelector)
     {
         var compiled = cursorKeySelector.Compile();
-        return compiled.DynamicInvoke(entity)!;
+        return compiled.DynamicInvoke(entity);
     }
 }

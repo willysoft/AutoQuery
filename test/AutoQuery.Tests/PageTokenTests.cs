@@ -81,4 +81,46 @@ public class PageTokenTests
         // Assert
         Assert.Equal(originalValue, decodedValue);
     }
+
+    [Fact]
+    public void Decode_ShouldHandleGuid()
+    {
+        // Arrange
+        var guid = Guid.NewGuid();
+        var token = PageToken.Encode(guid);
+
+        // Act
+        var decoded = PageToken.Decode<Guid>(token);
+
+        // Assert
+        Assert.Equal(guid, decoded);
+    }
+
+    [Fact]
+    public void Decode_ShouldHandleDateTime()
+    {
+        // Arrange
+        var dateTime = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var token = PageToken.Encode(dateTime);
+
+        // Act
+        var decoded = PageToken.Decode<DateTime>(token);
+
+        // Assert
+        Assert.Equal(dateTime, decoded);
+    }
+
+    [Fact]
+    public void Decode_ShouldHandleLong()
+    {
+        // Arrange
+        var longValue = 9876543210L;
+        var token = PageToken.Encode(longValue);
+
+        // Act
+        var decoded = PageToken.Decode<long>(token);
+
+        // Assert
+        Assert.Equal(longValue, decoded);
+    }
 }
