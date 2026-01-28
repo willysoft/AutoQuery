@@ -181,6 +181,22 @@ public static class ComplexFilterQueryPropertyBuilderExtensions
     }
 
     /// <summary>
+    /// Marks this property as the cursor key for cursor-based pagination.
+    /// This property will be used as the cursor position instead of the default "Id" property.
+    /// </summary>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <typeparam name="TQueryProperty">The type of the query property.</typeparam>
+    /// <typeparam name="TDataProperty">The type of the data property.</typeparam>
+    /// <param name="builder">The filter query property builder.</param>
+    /// <returns>The updated filter query property builder.</returns>
+    public static ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> HasCursorKey<TData, TQueryProperty, TDataProperty>(
+        this ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty> builder)
+    {
+        builder.SetAsCursorKey();
+        return builder;
+    }
+
+    /// <summary>
     /// Adds a comparison filter condition.
     /// </summary>
     /// <typeparam name="TData">The type of the data.</typeparam>

@@ -79,7 +79,8 @@ public static class QueryExtensions
         // If PageToken is provided, use cursor-based pagination
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
-            return query.ApplySort(queryOption).ApplyCursorBasedPaging(queryOption);
+            var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
+            return query.ApplySort(queryOption).ApplyCursorBasedPaging(queryOption, cursorKeySelector);
         }
         
         // Otherwise, use traditional offset-based pagination
@@ -173,13 +174,14 @@ public static class QueryExtensions
     /// <typeparam name="T">The type of the entity being queried.</typeparam>
     /// <param name="query">The query object (must already be sorted).</param>
     /// <param name="queryOption">The query options containing PageToken and PageSize.</param>
+    /// <param name="cursorKeySelector">Optional cursor key selector. If not provided, uses "Id" property.</param>
     /// <returns>A PagedResult with cursor tokens for navigation.</returns>
     /// <remarks>
     /// Important: This method requires the query to be sorted (using ApplySort or similar) before calling it.
     /// Without sorting, results may be inconsistent across page requests.
     /// Maximum page size is limited to 1000 for performance reasons.
     /// </remarks>
-    public static PagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption)
+    public static PagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
         where T : class
     {
         // Validate and limit page size
@@ -204,19 +206,40 @@ public static class QueryExtensions
             }
         }
 
-        // Get the Id property once - assuming entities have an "Id" property
-        var idProperty = s_PropertyCache.GetOrAdd(
-            $"{typeof(T).FullName}_Id",
-            _ => typeof(T).GetProperty("Id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+        // Determine cursor key property - use custom selector or default to "Id"
+        PropertyInfo? cursorProperty = null;
+        Expression? cursorExpression = null;
+        
+        if (cursorKeySelector != null)
+        {
+            // Extract property from the cursor key selector expression
+            cursorExpression = cursorKeySelector.Body;
+            // Remove Convert if present
+            if (cursorExpression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            {
+                cursorExpression = unary.Operand;
+            }
+            if (cursorExpression is MemberExpression memberExpr && memberExpr.Member is PropertyInfo prop)
+            {
+                cursorProperty = prop;
+            }
+        }
+        else
+        {
+            // Default to "Id" property
+            cursorProperty = s_PropertyCache.GetOrAdd(
+                $"{typeof(T).FullName}_Id",
+                _ => typeof(T).GetProperty("Id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+        }
 
-        // Apply cursor filtering if we have cursor data and a valid Id property
-        if (cursorData?.LastId != null && idProperty != null)
+        // Apply cursor filtering if we have cursor data and a valid cursor property
+        if (cursorData?.LastId != null && cursorProperty != null)
         {
             var parameter = Expression.Parameter(typeof(T), "entity");
-            var property = Expression.Property(parameter, idProperty);
+            var property = Expression.Property(parameter, cursorProperty);
             
             // Handle nullable types
-            var propertyType = idProperty.PropertyType;
+            var propertyType = cursorProperty.PropertyType;
             var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
             
             // Handle JsonElement from deserialization
@@ -240,7 +263,22 @@ public static class QueryExtensions
                 propertyExpression = Expression.Convert(property, underlyingType);
             }
             
-            var comparison = Expression.GreaterThan(propertyExpression, cursorIdValue);
+            // Build comparison expression based on type
+            Expression comparison;
+            if (underlyingType == typeof(string))
+            {
+                // For strings, use String.CompareTo > 0
+                var compareToMethod = typeof(string).GetMethod(nameof(string.CompareTo), new[] { typeof(string) })
+                    ?? throw new InvalidOperationException("CompareTo method not found on string type.");
+                var compareCall = Expression.Call(propertyExpression, compareToMethod, cursorIdValue);
+                comparison = Expression.GreaterThan(compareCall, Expression.Constant(0));
+            }
+            else
+            {
+                // For numeric types, use direct GreaterThan
+                comparison = Expression.GreaterThan(propertyExpression, cursorIdValue);
+            }
+            
             var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
             query = query.Where(lambda);
         }
@@ -257,10 +295,10 @@ public static class QueryExtensions
 
         // Generate next page token
         string? nextPageToken = null;
-        if (hasNextPage && items.Any() && idProperty != null)
+        if (hasNextPage && items.Any() && cursorProperty != null)
         {
             var lastItem = items.Last();
-            var lastId = idProperty.GetValue(lastItem);
+            var lastId = cursorProperty.GetValue(lastItem);
             var newCursorData = new CursorData(lastId);
             nextPageToken = PageToken.Encode(newCursorData);
         }

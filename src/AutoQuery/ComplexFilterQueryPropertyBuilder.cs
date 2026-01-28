@@ -14,6 +14,7 @@ public class ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataPrope
 {
     private Expression<Func<TData, TDataProperty>> _filterKeySelector;
     private List<(Expression<Func<TQueryProperty, TDataProperty, bool>> Expression, LogicalOperator Logical)> _filterExpressions = new();
+    private Action<Expression<Func<TData, object>>>? _setCursorKeyAction;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ComplexFilterQueryPropertyBuilder{TData, TQueryProperty, TDataProperty}"/> class.
@@ -22,6 +23,30 @@ public class ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataPrope
     public ComplexFilterQueryPropertyBuilder(Expression<Func<TData, TDataProperty>> filterKeySelector)
     {
         _filterKeySelector = filterKeySelector;
+    }
+
+    /// <summary>
+    /// Sets the action to be called when this property is marked as cursor key.
+    /// </summary>
+    /// <param name="setCursorKeyAction">The action to set the cursor key.</param>
+    internal void SetCursorKeyAction(Action<Expression<Func<TData, object>>> setCursorKeyAction)
+    {
+        _setCursorKeyAction = setCursorKeyAction;
+    }
+
+    /// <summary>
+    /// Marks this property as the cursor key for cursor-based pagination.
+    /// </summary>
+    internal void SetAsCursorKey()
+    {
+        if (_setCursorKeyAction != null)
+        {
+            // Convert the filter key selector to Expression<Func<TData, object>>
+            var parameter = _filterKeySelector.Parameters[0];
+            var body = Expression.Convert(_filterKeySelector.Body, typeof(object));
+            var cursorKeySelector = Expression.Lambda<Func<TData, object>>(body, parameter);
+            _setCursorKeyAction(cursorKeySelector);
+        }
     }
 
     /// <summary>

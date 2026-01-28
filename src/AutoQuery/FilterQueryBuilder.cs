@@ -16,6 +16,11 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     private readonly ConcurrentDictionary<(Type BuilderType, Type QueryPropertyType), Func<object, object, Expression<Func<TData, bool>>>> _compiledExpressionsCache = new();
     private readonly ConcurrentDictionary<PropertyInfo, Func<TQueryOptions, object>> _propertyAccessorsCache = new();
     private readonly Dictionary<string, PropertyInfo> _queryOptionsProperties = typeof(TQueryOptions).GetProperties().ToDictionary(p => p.Name);
+    
+    /// <summary>
+    /// Gets or sets the cursor key property expression.
+    /// </summary>
+    internal Expression<Func<TData, object>>? CursorKeySelector { get; set; }
 
     /// <summary>
     /// Registers a property for use in filter queries.
@@ -35,6 +40,10 @@ public class FilterQueryBuilder<TQueryOptions, TData>
             throw new ArgumentException("Invalid property expression");
 
         var builder = new ComplexFilterQueryPropertyBuilder<TData, TQueryProperty, TDataProperty>(filterKeySelector);
+        
+        // Set up cursor key action
+        builder.SetCursorKeyAction(cursorKeySelector => CursorKeySelector = cursorKeySelector);
+        
         _builderProperties[memberPath] = (builder, typeof(TQueryProperty));
         return builder;
     }

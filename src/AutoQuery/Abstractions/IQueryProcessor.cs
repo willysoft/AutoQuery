@@ -26,5 +26,13 @@ public interface IQueryProcessor
     /// <returns>The selector expression, or null if no selection conditions exist.</returns>
     Expression<Func<TData, TData>>? BuildSelectorExpression<TData, TQueryOptions>(TQueryOptions queryOptions)
         where TQueryOptions : IQueryOptions;
+
+    /// <summary>
+    /// Gets the cursor key selector for the specified query options and data types.
+    /// </summary>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <typeparam name="TData">The type of the data.</typeparam>
+    /// <returns>The cursor key selector expression, or null if not configured.</returns>
+    Expression<Func<TData, object>>? GetCursorKeySelector<TQueryOptions, TData>();
 }
 
