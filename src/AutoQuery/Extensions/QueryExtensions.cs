@@ -89,8 +89,18 @@ public static class QueryExtensions
         var totalPages = queryOption.PageSize.HasValue
                        ? (int)Math.Ceiling((double)count / queryOption.PageSize.Value)
                        : 1;
-        query = query.ApplySort(queryOption).ApplyPaging(queryOption);
-        return new PagedResult<TData>(query, page, totalPages, count);
+        var sortedQuery = query.ApplySort(queryOption);
+        var pagedQuery = sortedQuery.ApplyPaging(queryOption);
+        
+        // Generate next page token if there are more pages and we have a cursor key configured
+        string? nextPageToken = null;
+        if (queryOption.PageSize.HasValue && page < totalPages)
+        {
+            var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
+            nextPageToken = GeneratePageToken(pagedQuery, cursorKeySelector);
+        }
+        
+        return new PagedResult<TData>(pagedQuery, page, totalPages, count, nextPageToken);
     }
 
     /// <summary>
@@ -312,6 +322,53 @@ public static class QueryExtensions
             NextPageToken: nextPageToken,
             PreviousPageToken: null // Previous tokens would require bi-directional cursor support
         );
+    }
+
+    /// <summary>
+    /// Generates a page token from the last item in a query result.
+    /// </summary>
+    /// <typeparam name="T">The type of the entity.</typeparam>
+    /// <param name="query">The query containing items.</param>
+    /// <param name="cursorKeySelector">Optional cursor key selector. If not provided, uses "Id" property.</param>
+    /// <returns>A page token string, or null if no items or cursor property found.</returns>
+    private static string? GeneratePageToken<T>(IQueryable<T> query, Expression<Func<T, object>>? cursorKeySelector) where T : class
+    {
+        var items = query.ToList();
+        if (!items.Any())
+            return null;
+
+        // Determine cursor key property
+        PropertyInfo? cursorProperty = null;
+        
+        if (cursorKeySelector != null)
+        {
+            // Extract property from the cursor key selector expression
+            var cursorExpression = cursorKeySelector.Body;
+            // Remove Convert if present
+            if (cursorExpression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            {
+                cursorExpression = unary.Operand;
+            }
+            if (cursorExpression is MemberExpression memberExpr && memberExpr.Member is PropertyInfo prop)
+            {
+                cursorProperty = prop;
+            }
+        }
+        else
+        {
+            // Default to "Id" property
+            cursorProperty = s_PropertyCache.GetOrAdd(
+                $"{typeof(T).FullName}_Id",
+                _ => typeof(T).GetProperty("Id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+        }
+
+        if (cursorProperty == null)
+            return null;
+
+        var lastItem = items.Last();
+        var lastId = cursorProperty.GetValue(lastItem);
+        var cursorData = new CursorData(lastId);
+        return PageToken.Encode(cursorData);
     }
 
     /// <summary>
