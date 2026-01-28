@@ -230,9 +230,39 @@ GET /Users?filter[ids]=1&filter[ids]=3&fields=Id,Name&sort=-Id&page=1&pageSize=2
 
 AutoQuery supports cursor-based pagination using opaque page tokens, which returns `CursorPagedResult<TData>`. This approach is more efficient for large datasets and provides consistent results even when data changes between requests.
 
-1. Example Request (First Page):
+#### Using ApplyQueryCursorPagedResult (Recommended)
+
+For cursor-based pagination, use the dedicated `ApplyQueryCursorPagedResult` method which **always** generates navigation tokens, even on the first request (no pageToken needed):
+
+```csharp
+[ApiController]
+[Route("[controller]")]
+public class UsersCursorController : ControllerBase
+{
+    private readonly IQueryProcessor _queryProcessor;
+    
+    [HttpGet]
+    public CursorPagedResult<User> Get([FromQuery] UserCursorQueryOptions options)
+    {
+        var query = _dbContext.Users.AsQueryable();
+        
+        // Use ApplyQueryCursorPagedResult - always returns CursorPagedResult with tokens
+        return query.ApplyQueryCursorPagedResult(_queryProcessor, options);
+    }
+}
+
+public class UserCursorQueryOptions : IQueryCursorPagedOptions
+{
+    public int? PageSize { get; set; }
+    public string? PageToken { get; set; }
+    public string? Fields { get; set; }
+    public string? Sort { get; set; }
+}
+```
+
+1. Example Request (First Page - **no pageToken needed**):
 ```http
-GET /Users?pageSize=2&sort=Id
+GET /UsersCursor?pageSize=2&sort=Id
 ```
 
 2. Example Response (CursorPagedResult):
@@ -248,15 +278,14 @@ GET /Users?pageSize=2&sort=Id
             "name": "Jane Smith"
         }
     ],
-    "nextPageToken": "eyJMYXN0SWQiOjJ9"
+    "nextPageToken": "eyJMYXN0SWQiOjIsIkZpcnN0SWQiOm51bGx9",  // ✅ Generated automatically!
+    "previousPageToken": null
 }
 ```
 
-**Note**: Offset-based pagination (using `page` parameter) returns `OffsetPagedResult<TData>` with page metrics, while cursor-based pagination returns `CursorPagedResult<TData>` with only navigation tokens - no unnecessary fields!
-
 3. Example Request (Next Page using token):
 ```http
-GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
+GET /UsersCursor?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjIsIkZpcnN0SWQiOm51bGx9
 ```
 
 4. Example Response (CursorPagedResult):
