@@ -9,7 +9,8 @@
 - **Dynamic Query Building**: Generate queries dynamically using expression trees.
 - **Filtering**: Apply flexible filtering logic to refine query results.
 - **Field Projection**: Return only the specified fields to optimize API responses.
-- **Pagination and Sorting**: Built-in support for pagination and sorting.
+- **Pagination and Sorting**: Built-in support for both offset-based and cursor-based pagination, plus sorting.
+- **Cursor-Based Pagination**: Efficient page token implementation for reliable navigation through large datasets.
 - **ASP.NET Core Integration**: Middleware support for easy integration into ASP.NET Core projects.
 
 ## Benchmark
@@ -50,6 +51,7 @@ dotnet add package AutoQuery.AspNetCore
         public string? Sort { get; set; }
         public int? Page { get; set; }
         public int? PageSize { get; set; }
+        public string? PageToken { get; set; }
     }
     ```
 2. Configure the filter logic by implementing `IFilterQueryConfiguration`:
@@ -117,6 +119,8 @@ dotnet add package AutoQuery.AspNetCore
         public int? Page { get; set; }
         [FromQuery(Name = "pageSize")]
         public int? PageSize { get; set; }
+        [FromQuery(Name = "pageToken")]
+        public string? PageToken { get; set; }
     }
     ```
 2. Configure the filter logic by implementing `IFilterQueryConfiguration`:
@@ -191,6 +195,64 @@ GET /Users?filter[ids]=1&filter[ids]=3&fields=Id,Name&sort=-Id&page=1&pageSize=2
     "page": 1
 }
 ```
+
+### Cursor-Based Pagination
+
+AutoQuery also supports cursor-based pagination using opaque page tokens. This approach is more efficient for large datasets and provides consistent results even when data changes between requests.
+
+1. Example Request (First Page):
+```http
+GET /Users?pageSize=2&sort=Id
+```
+
+2. Example Response:
+```json
+{
+    "datas": [
+        {
+            "id": 1,
+            "name": "John Doe"
+        },
+        {
+            "id": 2,
+            "name": "Jane Smith"
+        }
+    ],
+    "count": 0,
+    "totalPages": 0,
+    "page": 0,
+    "nextPageToken": "eyJMYXN0SWQiOjJ9",
+    "previousPageToken": null
+}
+```
+
+3. Example Request (Next Page using token):
+```http
+GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
+```
+
+4. Example Response:
+```json
+{
+    "datas": [
+        {
+            "id": 3,
+            "name": "Alice Johnson"
+        },
+        {
+            "id": 4,
+            "name": "Bob Brown"
+        }
+    ],
+    "count": 0,
+    "totalPages": 0,
+    "page": 0,
+    "nextPageToken": "eyJMYXN0SWQiOjR9",
+    "previousPageToken": null
+}
+```
+
+**Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are not calculated for performance reasons. The `nextPageToken` will be `null` when there are no more pages available.
 
 ## Contribution
 
