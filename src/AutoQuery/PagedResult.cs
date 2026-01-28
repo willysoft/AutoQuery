@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Represents a generic record type for paginated results.
+/// This type is kept for backward compatibility. New code should use <see cref="OffsetPagedResult{TData}"/> or <see cref="CursorPagedResult{TData}"/>.
 /// </summary>
 /// <typeparam name="TData">The type of data contained in the result set.</typeparam>
 /// <param name="Datas">The data collection of the paginated result, represented as <see cref="IQueryable{T}"/>.</param>
@@ -11,16 +12,17 @@
 /// <param name="NextPageToken">The page token for the next page (cursor-based pagination). Null when using offset-based pagination or when no more pages exist.</param>
 /// <param name="PreviousPageToken">The page token for the previous page (cursor-based pagination). Null when using offset-based pagination or not supported.</param>
 /// <remarks>
-/// This type supports two pagination modes:
+/// This type is maintained for backward compatibility. For new code:
 /// <list type="bullet">
-/// <item><description>Offset-based: Uses Page, TotalPages, and Count. NextPageToken and PreviousPageToken are null.</description></item>
-/// <item><description>Cursor-based: Uses NextPageToken and PreviousPageToken. Page, TotalPages, and Count are null.</description></item>
+/// <item><description>Use <see cref="OffsetPagedResult{TData}"/> for offset-based pagination</description></item>
+/// <item><description>Use <see cref="CursorPagedResult{TData}"/> for cursor-based pagination</description></item>
 /// </list>
 /// </remarks>
+[Obsolete("Use OffsetPagedResult<TData> or CursorPagedResult<TData> instead for cleaner API responses.")]
 public record PagedResult<TData>(
     IQueryable<TData> Datas, 
     int? Page, 
     int? TotalPages, 
     int? Count,
     string? NextPageToken = null,
-    string? PreviousPageToken = null);
+    string? PreviousPageToken = null) : IPagedResult<TData>;

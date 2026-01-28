@@ -27,7 +27,7 @@ public class OffsetPaginationPageTokenTests
 
         // Act - First page with offset pagination
         var queryOptions = new TestQueryOptions { Page = 1, PageSize = 2 };
-        var result = query.ApplyQueryPagedResult(queryProcessor, queryOptions);
+        var result = (OffsetPagedResult<TestEntity>)query.ApplyQueryPagedResult(queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(2, result.Datas.Count());
@@ -35,7 +35,6 @@ public class OffsetPaginationPageTokenTests
         Assert.Equal(3, result.TotalPages);
         Assert.Equal(5, result.Count);
         Assert.NotNull(result.NextPageToken); // Should have next page token
-        Assert.Null(result.PreviousPageToken);
     }
 
     [Fact]
@@ -58,7 +57,7 @@ public class OffsetPaginationPageTokenTests
 
         // Act - Last page
         var queryOptions = new TestQueryOptions { Page = 2, PageSize = 2 };
-        var result = query.ApplyQueryPagedResult(queryProcessor, queryOptions);
+        var result = (OffsetPagedResult<TestEntity>)query.ApplyQueryPagedResult(queryProcessor, queryOptions);
 
         // Assert
         Assert.Single(result.Datas);
@@ -88,7 +87,7 @@ public class OffsetPaginationPageTokenTests
 
         // Get first page and token
         var firstPageOptions = new TestQueryOptions { Page = 1, PageSize = 2 };
-        var firstPage = query.ApplyQueryPagedResult(queryProcessor, firstPageOptions);
+        var firstPage = (OffsetPagedResult<TestEntity>)query.ApplyQueryPagedResult(queryProcessor, firstPageOptions);
 
         // Act - Use generated token for cursor-based pagination
         var cursorPageOptions = new TestQueryOptions 
@@ -96,13 +95,11 @@ public class OffsetPaginationPageTokenTests
             PageSize = 2, 
             PageToken = firstPage.NextPageToken 
         };
-        var cursorPage = query.ApplyQueryPagedResult(queryProcessor, cursorPageOptions);
+        var cursorPage = (CursorPagedResult<TestEntity>)query.ApplyQueryPagedResult(queryProcessor, cursorPageOptions);
 
         // Assert
         Assert.Equal(2, cursorPage.Datas.Count());
         Assert.Equal(3, cursorPage.Datas.First().Id);
-        Assert.Null(cursorPage.Page); // Cursor mode doesn't use page number
-        Assert.Null(cursorPage.TotalPages); // Cursor mode doesn't calculate total
     }
 
     [Fact]
@@ -122,7 +119,7 @@ public class OffsetPaginationPageTokenTests
 
         // Act
         var queryOptions = new TestQueryOptions { Page = 1, PageSize = 2 };
-        var result = query.ApplyQueryPagedResult(queryProcessor, queryOptions);
+        var result = (OffsetPagedResult<TestEntity>)query.ApplyQueryPagedResult(queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(2, result.Datas.Count());

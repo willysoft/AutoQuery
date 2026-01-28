@@ -132,5 +132,6 @@ public class QueryPerformance
         public string? Sort { get; set; }
         public int? Page { get; set; }
         public int? PageSize { get; set; }
+        public string? PageToken { get; set; }
     }
 }

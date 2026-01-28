@@ -65,7 +65,7 @@ public static class QueryExtensions
     /// <param name="queryProcessor">The query processor.</param>
     /// <param name="queryOption">The query options.</param>
     /// <returns>The query object with conditions and pagination options applied.</returns>
-    public static PagedResult<TData> ApplyQueryPagedResult<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
+    public static IPagedResult<TData> ApplyQueryPagedResult<TData, TQueryOptions>(this IQueryable<TData> query, IQueryProcessor queryProcessor, TQueryOptions queryOption)
         where TQueryOptions : IQueryPagedOptions
         where TData : class
     {
@@ -100,7 +100,7 @@ public static class QueryExtensions
             nextPageToken = GeneratePageToken(pagedQuery, cursorKeySelector);
         }
         
-        return new PagedResult<TData>(pagedQuery, page, totalPages, count, nextPageToken);
+        return new OffsetPagedResult<TData>(pagedQuery, page, totalPages, count, nextPageToken);
     }
 
     /// <summary>
@@ -185,13 +185,13 @@ public static class QueryExtensions
     /// <param name="query">The query object (must already be sorted).</param>
     /// <param name="queryOption">The query options containing PageToken and PageSize.</param>
     /// <param name="cursorKeySelector">Optional cursor key selector. If not provided, uses "Id" property.</param>
-    /// <returns>A PagedResult with cursor tokens for navigation.</returns>
+    /// <returns>A CursorPagedResult with cursor tokens for navigation.</returns>
     /// <remarks>
     /// Important: This method requires the query to be sorted (using ApplySort or similar) before calling it.
     /// Without sorting, results may be inconsistent across page requests.
     /// Maximum page size is limited to 1000 for performance reasons.
     /// </remarks>
-    public static PagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
+    public static CursorPagedResult<T> ApplyCursorBasedPaging<T>(this IQueryable<T> query, IQueryPagedOptions queryOption, Expression<Func<T, object>>? cursorKeySelector = null)
         where T : class
     {
         // Validate and limit page size
@@ -370,11 +370,8 @@ public static class QueryExtensions
         }
 
         // For cursor-based pagination, we don't track total count or pages (for performance)
-        return new PagedResult<T>(
-            items.AsQueryable(), 
-            Page: null, // Not applicable for cursor-based pagination
-            TotalPages: null, // Not applicable for cursor-based pagination
-            Count: null, // Not applicable for cursor-based pagination
+        return new CursorPagedResult<T>(
+            items.AsQueryable(),
             NextPageToken: nextPageToken,
             PreviousPageToken: previousPageToken
         );

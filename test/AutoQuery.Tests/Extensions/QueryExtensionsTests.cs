@@ -68,7 +68,7 @@ public class QueryExtensionsTests
                            .Returns(selectorExpression);
 
         // Act
-        var result = queryableData.ApplyQueryPagedResult(_queryProcessorMock.Object, queryOptions);
+        var result = (OffsetPagedResult<TestData>)queryableData.ApplyQueryPagedResult(_queryProcessorMock.Object, queryOptions);
 
         // Assert
         Assert.Equal(expectedCount, result.Datas.Count());

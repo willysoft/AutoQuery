@@ -169,10 +169,9 @@ public class CursorBasedPaginationTests
         // Act
         var result = query.ApplyCursorBasedPaging(queryOptions);
 
-        // Assert
-        Assert.Null(result.Count); // Should be null as we don't calculate total for cursor pagination
-        Assert.Null(result.Page);
-        Assert.Null(result.TotalPages);
+        // Assert - CursorPagedResult doesn't have these fields
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Datas.Count());
     }
 
     [Fact]
