@@ -39,10 +39,21 @@ dotnet add package AutoQuery.AspNetCore
 
 ## Getting Started
 
+### Pagination Interface Options
+
+AutoQuery provides three pagination interfaces to choose from:
+
+- **`IQueryOffsetPagedOptions`** - For traditional offset-based pagination (Page, PageSize)
+- **`IQueryCursorPagedOptions`** - For cursor-based pagination (PageToken, PageSize)
+- **`IQueryPagedOptions`** - Combines both modes for backward compatibility
+
+**Recommendation:** For new code, use the specific interfaces (`IQueryOffsetPagedOptions` or `IQueryCursorPagedOptions`) for clearer intent. Use `IQueryPagedOptions` when you need to support both pagination modes in the same query options class.
+
 ### Using AutoQuery in .NET Applications
 
-1. Define a query options class implementing the `IQueryOptions` interface:
+1. Define a query options class implementing the appropriate pagination interface:
     ```csharp
+    // For offset-based pagination
     public class UserQueryOptions : IQueryPagedOptions
     {
         public int[]? FilterIds { get; set; }
@@ -253,6 +264,33 @@ GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOjJ9
 ```
 
 **Note**: When using cursor-based pagination (pageToken), the `count`, `totalPages`, and `page` fields are not calculated for performance reasons. The `nextPageToken` will be `null` when there are no more pages available.
+
+#### Bi-directional Navigation
+
+Cursor-based pagination supports both forward and backward navigation:
+
+```json
+// Page 2 response includes both navigation tokens
+{
+  "datas": [...],
+  "nextPageToken": "eyJMYXN0SWQiOjQsIkZpcnN0SWQiOm51bGx9",       // Navigate forward
+  "previousPageToken": "eyJMYXN0SWQiOm51bGwsIkZpcnN0SWQiOjN9"  // Navigate backward
+}
+```
+
+You can navigate backward to the previous page:
+```http
+GET /Users?pageSize=2&sort=Id&pageToken=eyJMYXN0SWQiOm51bGwsIkZpcnN0SWQiOjN9
+```
+
+The response will include a `nextPageToken` to allow forward navigation again:
+```json
+{
+  "datas": [{"id": 1}, {"id": 2}],
+  "nextPageToken": "eyJMYXN0SWQiOjIsIkZpcnN0SWQiOm51bGx9",  // Can go forward
+  "previousPageToken": null  // First page, can't go back further
+}
+```
 
 ### Configuring Custom Cursor Key
 
