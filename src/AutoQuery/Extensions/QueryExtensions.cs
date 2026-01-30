@@ -196,7 +196,9 @@ public static class QueryExtensions
         // Apply cursor-based filtering if page token is provided
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
-            query = ApplyCursorFilter(query, cursorKeySelector, queryOption.PageToken);
+            // Determine if cursor key is sorted in descending order
+            bool isDescending = IsCursorKeyDescending(queryOption.Sort, cursorKeySelector);
+            query = ApplyCursorFilter(query, cursorKeySelector, queryOption.PageToken, isDescending);
         }
 
         // Fetch one extra item to determine if there are more results
@@ -226,7 +228,8 @@ public static class QueryExtensions
     private static IQueryable<TData> ApplyCursorFilter<TData>(
         IQueryable<TData> query, 
         LambdaExpression cursorKeySelector, 
-        string pageToken)
+        string pageToken,
+        bool isDescending)
     {
         var returnType = ((cursorKeySelector.Body as MemberExpression)?.Type) 
             ?? ((cursorKeySelector.Body as UnaryExpression)?.Operand as MemberExpression)?.Type
@@ -238,12 +241,17 @@ public static class QueryExtensions
         if (cursorValue == null)
             throw new InvalidOperationException("Decoded cursor value cannot be null.");
 
-        // Build the filter expression: entity => entity.CursorKey > cursorValue
+        // Build the filter expression: entity => entity.CursorKey > cursorValue (ascending) or entity => entity.CursorKey < cursorValue (descending)
         var parameter = Expression.Parameter(typeof(TData), "entity");
         var cursorProperty = Expression.Invoke(cursorKeySelector, parameter);
         var constant = Expression.Constant(cursorValue, returnType);
-        var greaterThan = Expression.GreaterThan(cursorProperty, constant);
-        var lambda = Expression.Lambda<Func<TData, bool>>(greaterThan, parameter);
+        
+        // Use LessThan for descending order, GreaterThan for ascending order
+        var comparison = isDescending 
+            ? Expression.LessThan(cursorProperty, constant)
+            : Expression.GreaterThan(cursorProperty, constant);
+        
+        var lambda = Expression.Lambda<Func<TData, bool>>(comparison, parameter);
 
         return query.Where(lambda);
     }
@@ -255,5 +263,59 @@ public static class QueryExtensions
     {
         var compiled = cursorKeySelector.Compile();
         return compiled.DynamicInvoke(entity);
+    }
+
+    /// <summary>
+    /// Determines if the cursor key is sorted in descending order.
+    /// </summary>
+    private static bool IsCursorKeyDescending(string? sortExpression, LambdaExpression cursorKeySelector)
+    {
+        if (string.IsNullOrWhiteSpace(sortExpression))
+            return false;
+
+        // Get the cursor key property name
+        var cursorPropertyName = GetPropertyName(cursorKeySelector);
+        if (string.IsNullOrEmpty(cursorPropertyName))
+            return false;
+
+        // Parse sort fields
+        var sortFields = sortExpression.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        
+        foreach (var sortField in sortFields)
+        {
+            if (string.IsNullOrWhiteSpace(sortField))
+                continue;
+
+            var isDescending = sortField.StartsWith("-");
+            var fieldName = isDescending ? sortField[1..] : sortField;
+
+            // Check if this sort field matches the cursor key (case-insensitive)
+            if (string.Equals(fieldName, cursorPropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                return isDescending;
+            }
+        }
+
+        // If cursor key is not in the sort expression, default to ascending
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the property name from a lambda expression.
+    /// </summary>
+    private static string? GetPropertyName(LambdaExpression expression)
+    {
+        if (expression.Body is MemberExpression memberExpression)
+        {
+            return memberExpression.Member.Name;
+        }
+        
+        if (expression.Body is UnaryExpression unaryExpression && 
+            unaryExpression.Operand is MemberExpression operandMember)
+        {
+            return operandMember.Member.Name;
+        }
+
+        return null;
     }
 }

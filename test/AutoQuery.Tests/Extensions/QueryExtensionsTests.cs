@@ -602,6 +602,65 @@ public class QueryExtensionsCursorPaginationTests
         Assert.NotNull(result.NextPageToken);
     }
 
+    [Fact]
+    public void ApplyQueryCursorPaged_WithDescendingSort()
+    {
+        // Arrange
+        var queryProcessor = new QueryProcessor();
+        var builder = new FilterQueryBuilder<TestCursorQueryOptions, TestData>();
+        builder.HasCursorKey(d => d.Id);
+        queryProcessor.AddFilterQueryBuilder(builder);
+
+        var testData = new List<TestData>
+        {
+            new TestData { Id = 1, Name = "Item 1" },
+            new TestData { Id = 2, Name = "Item 2" },
+            new TestData { Id = 3, Name = "Item 3" },
+            new TestData { Id = 4, Name = "Item 4" },
+            new TestData { Id = 5, Name = "Item 5" },
+        }.AsQueryable();
+
+        var firstPageOptions = new TestCursorQueryOptions { PageSize = 2, Sort = "-id" };
+
+        // Act - First page
+        var firstPage = testData.ApplyQueryCursorPaged(queryProcessor, firstPageOptions);
+
+        // Assert - First page should have items 5 and 4 (descending order)
+        Assert.Equal(2, firstPage.Count);
+        Assert.Equal(5, firstPage.Datas.First().Id);
+        Assert.Equal(4, firstPage.Datas.Last().Id);
+        Assert.NotNull(firstPage.NextPageToken);
+
+        // Act - Second page
+        var secondPageOptions = new TestCursorQueryOptions 
+        { 
+            PageSize = 2, 
+            Sort = "-id", 
+            PageToken = firstPage.NextPageToken 
+        };
+        var secondPage = testData.ApplyQueryCursorPaged(queryProcessor, secondPageOptions);
+
+        // Assert - Second page should have items 3 and 2 (descending order)
+        Assert.Equal(2, secondPage.Count);
+        Assert.Equal(3, secondPage.Datas.First().Id);
+        Assert.Equal(2, secondPage.Datas.Last().Id);
+        Assert.NotNull(secondPage.NextPageToken);
+
+        // Act - Third page
+        var thirdPageOptions = new TestCursorQueryOptions 
+        { 
+            PageSize = 2, 
+            Sort = "-id", 
+            PageToken = secondPage.NextPageToken 
+        };
+        var thirdPage = testData.ApplyQueryCursorPaged(queryProcessor, thirdPageOptions);
+
+        // Assert - Third page should have item 1 only
+        Assert.Equal(1, thirdPage.Count);
+        Assert.Equal(1, thirdPage.Datas.First().Id);
+        Assert.Null(thirdPage.NextPageToken);
+    }
+
     public class TestData
     {
         public int Id { get; set; }
