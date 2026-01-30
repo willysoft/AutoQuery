@@ -1,4 +1,4 @@
-﻿using AutoQuery.Abstractions;
+using AutoQuery.Abstractions;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,6 +12,10 @@ public static class QueryExtensions
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> s_PropertysCache = new();
     private static readonly ConcurrentDictionary<string, PropertyInfo?> s_PropertyCache = new();
+    private static readonly ConcurrentDictionary<string, PropertyInfo?> _propertyCache = new();
+    private static readonly ConcurrentDictionary<string, MethodInfo> _orderByMethodCache = new();
+    private static readonly MethodInfo _stringCompareMethod = 
+        typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
 
     /// <summary>
     /// Applies query conditions.
@@ -85,6 +89,70 @@ public static class QueryExtensions
     }
 
     /// <summary>
+    /// Applies query conditions and cursor-based pagination.
+    /// </summary>
+    /// <remarks>
+    /// Supports sorting by any field using composite cursors.
+    /// The page token encodes all sort field values plus the cursor key for accurate pagination.
+    /// </remarks>
+    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
+    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
+    /// <param name="query">The query object.</param>
+    /// <param name="queryProcessor">The query processor.</param>
+    /// <param name="queryOption">The query options.</param>
+    /// <returns>The cursor-based paginated result.</returns>
+    public static CursorPagedResult<TData> ApplyQueryCursorPagedResult<TData, TQueryOptions>(
+        this IQueryable<TData> query, 
+        IQueryProcessor queryProcessor, 
+        TQueryOptions queryOption)
+        where TQueryOptions : IQueryCursorOptions
+        where TData : class
+    {
+        var filterExpression = queryProcessor.BuildFilterExpression<TData, TQueryOptions>(queryOption);
+        var selectorExpression = queryProcessor.BuildSelectorExpression<TData, TQueryOptions>(queryOption);
+        
+        if (filterExpression != null)
+            query = query.Where(filterExpression);
+        
+        if (selectorExpression != null)
+            query = query.Select(selectorExpression);
+
+        var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
+        if (cursorKeySelector == null)
+            throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
+
+        var sortFields = ParseSortFields(queryOption.Sort);
+        var cursorPropertyName = GetPropertyName(cursorKeySelector);
+        
+        if (!string.IsNullOrEmpty(cursorPropertyName) && 
+            !sortFields.Any(sf => string.Equals(sf.PropertyName, cursorPropertyName, StringComparison.OrdinalIgnoreCase)))
+        {
+            sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
+        }
+
+        query = ApplySort(query, sortFields);
+
+        if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
+        {
+            query = ApplyCompositeCursorFilter(query, sortFields, queryOption.PageToken);
+        }
+
+        var pageSize = queryOption.PageSize ?? 10;
+        var items = query.Take(pageSize + 1).ToList();
+
+        string? nextPageToken = null;
+        var hasMore = items.Count > pageSize;
+        
+        if (hasMore)
+        {
+            items.RemoveAt(items.Count - 1);
+            nextPageToken = CreateCompositeCursorToken(items[^1], sortFields);
+        }
+
+        return new CursorPagedResult<TData>(items.AsQueryable(), nextPageToken, items.Count);
+    }
+
+    /// <summary>
     /// Applies sorting to the query results.
     /// </summary>
     /// <typeparam name="T">The type of the entity being queried.</typeparam>
@@ -114,8 +182,7 @@ public static class QueryExtensions
 
             var parameter = Expression.Parameter(typeof(T), "entity");
             var property = Expression.Property(parameter, propertyInfo);
-            var delegateType = typeof(Func<,>).MakeGenericType(typeof(T), propertyInfo.PropertyType);
-            var lambda = Expression.Lambda(delegateType, property, parameter);
+            var lambda = Expression.Lambda(typeof(Func<,>).MakeGenericType(typeof(T), propertyInfo.PropertyType), property, parameter);
 
             string methodName = (isFirstSort, descending) switch
             {
@@ -160,145 +227,35 @@ public static class QueryExtensions
     }
 
     /// <summary>
-    /// Applies query conditions and cursor-based pagination.
+    /// Applies sort fields to query using same logic as ApplySort.
     /// </summary>
-    /// <remarks>
-    /// Supports sorting by any field using composite cursors.
-    /// The page token encodes all sort field values plus the cursor key for accurate pagination.
-    /// </remarks>
-    /// <typeparam name="TData">The type of the entity being queried.</typeparam>
-    /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
-    /// <param name="query">The query object.</param>
-    /// <param name="queryProcessor">The query processor.</param>
-    /// <param name="queryOption">The query options.</param>
-    /// <returns>The cursor-based paginated result.</returns>
-    public static CursorPagedResult<TData> ApplyQueryCursorPaged<TData, TQueryOptions>(
-        this IQueryable<TData> query, 
-        IQueryProcessor queryProcessor, 
-        TQueryOptions queryOption)
-        where TQueryOptions : IQueryCursorOptions
-        where TData : class
+    private static IQueryable<TData> ApplySort<TData>(IQueryable<TData> query, List<SortField> sortFields)
     {
-        var filterExpression = queryProcessor.BuildFilterExpression<TData, TQueryOptions>(queryOption);
-        var selectorExpression = queryProcessor.BuildSelectorExpression<TData, TQueryOptions>(queryOption);
-        
-        if (filterExpression != null)
-            query = query.Where(filterExpression);
-        
-        if (selectorExpression != null)
-            query = query.Select(selectorExpression);
+        if (sortFields.Count == 0)
+            return query;
 
-        var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
-        if (cursorKeySelector == null)
-            throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
+        IOrderedQueryable<TData>? orderedQuery = null;
 
-        var sortFields = ParseSortFields(queryOption.Sort);
-        var cursorPropertyName = GetPropertyName(cursorKeySelector);
-        
-        if (!string.IsNullOrEmpty(cursorPropertyName) && 
-            !sortFields.Any(sf => string.Equals(sf.PropertyName, cursorPropertyName, StringComparison.OrdinalIgnoreCase)))
-        {
-            sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
-        }
-
-        query = ApplySortFields(query, sortFields);
-
-        if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
-        {
-            query = ApplyCompositeCursorFilter(query, sortFields, queryOption.PageToken);
-        }
-
-        var pageSize = queryOption.PageSize ?? 10;
-        var items = query.Take(pageSize + 1).ToList();
-
-        string? nextPageToken = null;
-        var hasMore = items.Count > pageSize;
-        
-        if (hasMore)
-        {
-            items = items.Take(pageSize).ToList();
-            nextPageToken = CreateCompositeCursorToken(items[^1], sortFields);
-        }
-
-        return new CursorPagedResult<TData>(items, nextPageToken, items.Count);
-    }
-
-    /// <summary>
-    /// Applies cursor-based filtering to the query.
-    /// </summary>
-    private static IQueryable<TData> ApplyCursorFilter<TData>(
-        IQueryable<TData> query, 
-        LambdaExpression cursorKeySelector, 
-        string pageToken,
-        bool isDescending)
-    {
-        var returnType = ((cursorKeySelector.Body as MemberExpression)?.Type) 
-            ?? ((cursorKeySelector.Body as UnaryExpression)?.Operand as MemberExpression)?.Type
-            ?? typeof(object);
-
-        var decodeMethod = typeof(PageToken).GetMethod(nameof(PageToken.Decode))!.MakeGenericMethod(returnType);
-        var cursorValue = decodeMethod.Invoke(null, new object[] { pageToken });
-
-        if (cursorValue == null)
-            throw new InvalidOperationException("Decoded cursor value cannot be null.");
-
-        // Build the filter expression: entity => entity.CursorKey > cursorValue (ascending) or entity => entity.CursorKey < cursorValue (descending)
-        var parameter = Expression.Parameter(typeof(TData), "entity");
-        var cursorProperty = Expression.Invoke(cursorKeySelector, parameter);
-        var constant = Expression.Constant(cursorValue, returnType);
-        
-        // Use LessThan for descending order, GreaterThan for ascending order
-        var comparison = isDescending 
-            ? Expression.LessThan(cursorProperty, constant)
-            : Expression.GreaterThan(cursorProperty, constant);
-        
-        var lambda = Expression.Lambda<Func<TData, bool>>(comparison, parameter);
-
-        return query.Where(lambda);
-    }
-
-    /// <summary>
-    /// Gets the cursor value from an entity.
-    /// </summary>
-    private static object? GetCursorValue<TData>(TData entity, LambdaExpression cursorKeySelector)
-    {
-        var compiled = cursorKeySelector.Compile();
-        return compiled.DynamicInvoke(entity);
-    }
-
-    /// <summary>
-    /// Determines if the cursor key is sorted in descending order.
-    /// </summary>
-    private static bool IsCursorKeyDescending(string? sortExpression, LambdaExpression cursorKeySelector)
-    {
-        if (string.IsNullOrWhiteSpace(sortExpression))
-            return false;
-
-        // Get the cursor key property name
-        var cursorPropertyName = GetPropertyName(cursorKeySelector);
-        if (string.IsNullOrEmpty(cursorPropertyName))
-            return false;
-
-        // Parse sort fields
-        var sortFields = sortExpression.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        
         foreach (var sortField in sortFields)
         {
-            if (string.IsNullOrWhiteSpace(sortField))
-                continue;
+            var parameter = Expression.Parameter(typeof(TData), "entity");
+            var property = Expression.Property(parameter, sortField.PropertyName);
+            var lambda = Expression.Lambda(property, parameter);
 
-            var isDescending = sortField.StartsWith("-");
-            var fieldName = isDescending ? sortField[1..] : sortField;
+            var methodName = orderedQuery == null
+                ? (sortField.IsDescending ? "OrderByDescending" : "OrderBy")
+                : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
 
-            // Check if this sort field matches the cursor key (case-insensitive)
-            if (string.Equals(fieldName, cursorPropertyName, StringComparison.OrdinalIgnoreCase))
-            {
-                return isDescending;
-            }
+            var cacheKey = $"{methodName}_{typeof(TData).FullName}_{property.Type.FullName}";
+            var method = _orderByMethodCache.GetOrAdd(cacheKey, _ =>
+                typeof(Queryable).GetMethods()
+                    .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                    .MakeGenericMethod(typeof(TData), property.Type));
+
+            orderedQuery = (IOrderedQueryable<TData>)method.Invoke(null, new object[] { orderedQuery ?? query, lambda })!;
         }
 
-        // If cursor key is not in the sort expression, default to ascending
-        return false;
+        return orderedQuery ?? query;
     }
 
     /// <summary>
@@ -358,42 +315,6 @@ public static class QueryExtensions
         return sortFields;
     }
 
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Reflection.MethodInfo> _orderByMethodCache = new();
-
-    /// <summary>
-    /// Applies sort fields to query.
-    /// </summary>
-    private static IQueryable<TData> ApplySortFields<TData>(IQueryable<TData> query, List<SortField> sortFields)
-    {
-        if (sortFields.Count == 0)
-            return query;
-
-        IOrderedQueryable<TData>? orderedQuery = null;
-
-        foreach (var sortField in sortFields)
-        {
-            var parameter = Expression.Parameter(typeof(TData), "x");
-            var property = Expression.Property(parameter, sortField.PropertyName);
-            var lambda = Expression.Lambda(property, parameter);
-
-            var methodName = orderedQuery == null
-                ? (sortField.IsDescending ? "OrderByDescending" : "OrderBy")
-                : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
-
-            var cacheKey = $"{methodName}_{typeof(TData).FullName}_{property.Type.FullName}";
-            var method = _orderByMethodCache.GetOrAdd(cacheKey, _ =>
-                typeof(Queryable).GetMethods()
-                    .First(m => m.Name == methodName && m.GetParameters().Length == 2)
-                    .MakeGenericMethod(typeof(TData), property.Type));
-
-            orderedQuery = (IOrderedQueryable<TData>)method.Invoke(null, new object[] { orderedQuery ?? query, lambda })!;
-        }
-
-        return orderedQuery ?? query;
-    }
-
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Reflection.PropertyInfo?> _propertyCache = new();
-
     /// <summary>
     /// Creates a composite cursor token from the last item.
     /// </summary>
@@ -420,9 +341,6 @@ public static class QueryExtensions
 
         return PageToken.EncodeComposite(cursorValues);
     }
-
-    private static readonly System.Reflection.MethodInfo _stringCompareMethod = 
-        typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
 
     /// <summary>
     /// Applies composite cursor filter to the query.

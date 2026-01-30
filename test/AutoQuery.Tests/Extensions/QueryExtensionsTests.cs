@@ -439,13 +439,13 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldReturnFirstPage_WhenNoTokenProvided()
+    public void ApplyQueryCursorPagedResult_ShouldReturnFirstPage_WhenNoTokenProvided()
     {
         // Arrange
         var queryOptions = new TestCursorQueryOptions { PageSize = 2 };
 
         // Act
-        var result = _testData.ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        var result = _testData.ApplyQueryCursorPagedResult(_queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -454,11 +454,11 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldReturnNextPage_WhenTokenProvided()
+    public void ApplyQueryCursorPagedResult_ShouldReturnNextPage_WhenTokenProvided()
     {
         // Arrange
         var firstPageOptions = new TestCursorQueryOptions { PageSize = 2 };
-        var firstPageResult = _testData.ApplyQueryCursorPaged(_queryProcessor, firstPageOptions);
+        var firstPageResult = _testData.ApplyQueryCursorPagedResult(_queryProcessor, firstPageOptions);
         
         var secondPageOptions = new TestCursorQueryOptions 
         { 
@@ -467,7 +467,7 @@ public class QueryExtensionsCursorPaginationTests
         };
 
         // Act
-        var result = _testData.ApplyQueryCursorPaged(_queryProcessor, secondPageOptions);
+        var result = _testData.ApplyQueryCursorPagedResult(_queryProcessor, secondPageOptions);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -475,13 +475,13 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldReturnNullNextToken_WhenNoMoreResults()
+    public void ApplyQueryCursorPagedResult_ShouldReturnNullNextToken_WhenNoMoreResults()
     {
         // Arrange
         var queryOptions = new TestCursorQueryOptions { PageSize = 10 };
 
         // Act
-        var result = _testData.ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        var result = _testData.ApplyQueryCursorPagedResult(_queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(5, result.Count);
@@ -489,7 +489,7 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldThrowException_WhenCursorKeyNotConfigured()
+    public void ApplyQueryCursorPagedResult_ShouldThrowException_WhenCursorKeyNotConfigured()
     {
         // Arrange
         var queryProcessor = new QueryProcessor();
@@ -501,11 +501,11 @@ public class QueryExtensionsCursorPaginationTests
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => 
-            _testData.ApplyQueryCursorPaged(queryProcessor, queryOptions));
+            _testData.ApplyQueryCursorPagedResult(queryProcessor, queryOptions));
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldApplyFilters_WithCursorPagination()
+    public void ApplyQueryCursorPagedResult_ShouldApplyFilters_WithCursorPagination()
     {
         // Arrange
         var queryOptions = new TestCursorQueryOptions 
@@ -515,7 +515,7 @@ public class QueryExtensionsCursorPaginationTests
         };
 
         // Act
-        var result = _testData.ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        var result = _testData.ApplyQueryCursorPagedResult(_queryProcessor, queryOptions);
 
         // Assert
         Assert.Single(result.Datas);
@@ -524,7 +524,7 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_ShouldWorkWithCustomSorting()
+    public void ApplyQueryCursorPagedResult_ShouldWorkWithCustomSorting()
     {
         // Arrange
         var queryOptions = new TestCursorQueryOptions 
@@ -534,14 +534,14 @@ public class QueryExtensionsCursorPaginationTests
         };
 
         // Act
-        var firstPage = _testData.ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+        var firstPage = _testData.ApplyQueryCursorPagedResult(_queryProcessor, queryOptions);
         var secondPageOptions = new TestCursorQueryOptions 
         { 
             PageSize = 2,
             Sort = "id",
             PageToken = firstPage.NextPageToken
         };
-        var secondPage = _testData.ApplyQueryCursorPaged(_queryProcessor, secondPageOptions);
+        var secondPage = _testData.ApplyQueryCursorPagedResult(_queryProcessor, secondPageOptions);
 
         // Assert
         Assert.Equal(2, firstPage.Count);
@@ -551,7 +551,7 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_WithLongCursorKey()
+    public void ApplyQueryCursorPagedResult_WithLongCursorKey()
     {
         // Arrange
         var queryProcessor = new QueryProcessor();
@@ -569,7 +569,7 @@ public class QueryExtensionsCursorPaginationTests
         var queryOptions = new TestCursorQueryOptionsLong { PageSize = 2 };
 
         // Act
-        var result = testData.ApplyQueryCursorPaged(queryProcessor, queryOptions);
+        var result = testData.ApplyQueryCursorPagedResult(queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -577,7 +577,7 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_WithStringCursorKey()
+    public void ApplyQueryCursorPagedResult_WithStringCursorKey()
     {
         // Arrange
         var queryProcessor = new QueryProcessor();
@@ -595,7 +595,7 @@ public class QueryExtensionsCursorPaginationTests
         var queryOptions = new TestCursorQueryOptionsString { PageSize = 2, Sort = "code" };
 
         // Act
-        var result = testData.ApplyQueryCursorPaged(queryProcessor, queryOptions);
+        var result = testData.ApplyQueryCursorPagedResult(queryProcessor, queryOptions);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -603,7 +603,7 @@ public class QueryExtensionsCursorPaginationTests
     }
 
     [Fact]
-    public void ApplyQueryCursorPaged_WithDescendingSort()
+    public void ApplyQueryCursorPagedResult_WithDescendingSort()
     {
         // Arrange
         var queryProcessor = new QueryProcessor();
@@ -623,7 +623,7 @@ public class QueryExtensionsCursorPaginationTests
         var firstPageOptions = new TestCursorQueryOptions { PageSize = 2, Sort = "-id" };
 
         // Act - First page
-        var firstPage = testData.ApplyQueryCursorPaged(queryProcessor, firstPageOptions);
+        var firstPage = testData.ApplyQueryCursorPagedResult(queryProcessor, firstPageOptions);
 
         // Assert - First page should have items 5 and 4 (descending order)
         Assert.Equal(2, firstPage.Count);
@@ -638,7 +638,7 @@ public class QueryExtensionsCursorPaginationTests
             Sort = "-id", 
             PageToken = firstPage.NextPageToken 
         };
-        var secondPage = testData.ApplyQueryCursorPaged(queryProcessor, secondPageOptions);
+        var secondPage = testData.ApplyQueryCursorPagedResult(queryProcessor, secondPageOptions);
 
         // Assert - Second page should have items 3 and 2 (descending order)
         Assert.Equal(2, secondPage.Count);
@@ -653,7 +653,7 @@ public class QueryExtensionsCursorPaginationTests
             Sort = "-id", 
             PageToken = secondPage.NextPageToken 
         };
-        var thirdPage = testData.ApplyQueryCursorPaged(queryProcessor, thirdPageOptions);
+        var thirdPage = testData.ApplyQueryCursorPagedResult(queryProcessor, thirdPageOptions);
 
         // Assert - Third page should have item 1 only
         Assert.Equal(1, thirdPage.Count);

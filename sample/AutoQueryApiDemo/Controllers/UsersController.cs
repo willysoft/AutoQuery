@@ -40,7 +40,7 @@ public class UsersController : ControllerBase
     public IActionResult GetWithCursor(UserCursorQueryOptions queryOptions)
     {
         var result = users.AsQueryable()
-                          .ApplyQueryCursorPaged(_queryProcessor, queryOptions);
+                          .ApplyQueryCursorPagedResult(_queryProcessor, queryOptions);
         return Ok(result);
     }
 }
