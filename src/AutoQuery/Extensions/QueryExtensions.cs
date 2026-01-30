@@ -12,8 +12,8 @@ public static class QueryExtensions
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> s_PropertysCache = new();
     private static readonly ConcurrentDictionary<string, PropertyInfo?> s_PropertyCache = new();
-    private static readonly ConcurrentDictionary<string, MethodInfo> _orderByMethodCache = new();
-    private static readonly MethodInfo _stringCompareMethod = 
+    private static readonly ConcurrentDictionary<string, MethodInfo> s_OrderByMethodCache = new();
+    private static readonly MethodInfo s_StringCompareMethod = 
         typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
 
     /// <summary>
@@ -250,7 +250,7 @@ public static class QueryExtensions
                 : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
 
             var cacheKey = $"{methodName}_{typeof(TData).FullName}_{property.Type.FullName}";
-            var method = _orderByMethodCache.GetOrAdd(cacheKey, _ =>
+            var method = s_OrderByMethodCache.GetOrAdd(cacheKey, _ =>
                 typeof(Queryable).GetMethods()
                     .First(m => m.Name == methodName && m.GetParameters().Length == 2)
                     .MakeGenericMethod(typeof(TData), property.Type));
@@ -389,7 +389,7 @@ public static class QueryExtensions
                 
                 if (currentProperty.Type == typeof(string))
                 {
-                    var compareCall = Expression.Call(_stringCompareMethod, currentProperty, currentConstant);
+                    var compareCall = Expression.Call(s_StringCompareMethod, currentProperty, currentConstant);
                     var zero = Expression.Constant(0);
                     
                     comparison = currentField.IsDescending
