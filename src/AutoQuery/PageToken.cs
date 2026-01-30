@@ -22,12 +22,11 @@ public static class PageToken
         if (string.IsNullOrEmpty(valueString))
             throw new ArgumentException("Cursor value cannot be empty", nameof(cursorValue));
 
-        var bytes = Encoding.UTF8.GetBytes(valueString);
-        return Convert.ToBase64String(bytes);
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(valueString));
     }
 
     /// <summary>
-    /// Encodes multiple cursor values into an opaque page token (composite cursor).
+    /// Encodes multiple cursor values into an opaque page token.
     /// </summary>
     /// <param name="cursorValues">Dictionary of field names and their values.</param>
     /// <returns>The encoded page token.</returns>
@@ -37,8 +36,7 @@ public static class PageToken
             throw new ArgumentException("Cursor values cannot be null or empty", nameof(cursorValues));
 
         var json = JsonSerializer.Serialize(cursorValues);
-        var bytes = Encoding.UTF8.GetBytes(json);
-        return Convert.ToBase64String(bytes);
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
     }
 
     /// <summary>
@@ -54,25 +52,17 @@ public static class PageToken
 
         try
         {
-            var bytes = Convert.FromBase64String(pageToken);
-            var valueString = Encoding.UTF8.GetString(bytes);
-            
-            var targetType = typeof(T);
-            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+            var valueString = Encoding.UTF8.GetString(Convert.FromBase64String(pageToken));
+            var underlyingType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
 
-            // Handle common cursor key types explicitly
             if (underlyingType == typeof(Guid))
-            {
                 return (T)(object)Guid.Parse(valueString);
-            }
+            
             if (underlyingType == typeof(DateTime))
-            {
                 return (T)(object)DateTime.Parse(valueString, System.Globalization.CultureInfo.InvariantCulture);
-            }
+            
             if (underlyingType == typeof(DateTimeOffset))
-            {
                 return (T)(object)DateTimeOffset.Parse(valueString, System.Globalization.CultureInfo.InvariantCulture);
-            }
 
             return (T)Convert.ChangeType(valueString, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
         }
@@ -94,8 +84,7 @@ public static class PageToken
 
         try
         {
-            var bytes = Convert.FromBase64String(pageToken);
-            var json = Encoding.UTF8.GetString(bytes);
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(pageToken));
             return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) 
                 ?? throw new InvalidOperationException("Failed to deserialize page token");
         }

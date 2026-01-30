@@ -163,7 +163,7 @@ public static class QueryExtensions
     /// Applies query conditions and cursor-based pagination.
     /// </summary>
     /// <remarks>
-    /// Cursor-based pagination now supports sorting by any field using composite cursors.
+    /// Supports sorting by any field using composite cursors.
     /// The page token encodes all sort field values plus the cursor key for accurate pagination.
     /// </remarks>
     /// <typeparam name="TData">The type of the entity being queried.</typeparam>
@@ -188,45 +188,36 @@ public static class QueryExtensions
         if (selectorExpression != null)
             query = query.Select(selectorExpression);
 
-        // Get cursor key selector from the query processor
         var cursorKeySelector = queryProcessor.GetCursorKeySelector<TQueryOptions, TData>();
-        
         if (cursorKeySelector == null)
             throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
 
-        // Parse sort fields
         var sortFields = ParseSortFields(queryOption.Sort);
         var cursorPropertyName = GetPropertyName(cursorKeySelector);
         
-        // Ensure cursor key is in sort as tie-breaker if not already present
         if (!string.IsNullOrEmpty(cursorPropertyName) && 
             !sortFields.Any(sf => string.Equals(sf.PropertyName, cursorPropertyName, StringComparison.OrdinalIgnoreCase)))
         {
             sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
         }
 
-        // Apply sorting
         query = ApplySortFields(query, sortFields);
 
-        // Apply cursor-based filtering if page token is provided
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
             query = ApplyCompositeCursorFilter(query, sortFields, queryOption.PageToken);
         }
 
-        // Fetch one extra item to determine if there are more results
         var pageSize = queryOption.PageSize ?? 10;
         var items = query.Take(pageSize + 1).ToList();
 
-        // Determine if there are more results and generate next page token
         string? nextPageToken = null;
         var hasMore = items.Count > pageSize;
         
         if (hasMore)
         {
             items = items.Take(pageSize).ToList();
-            var lastItem = items.Last();
-            nextPageToken = CreateCompositeCursorToken(lastItem, sortFields);
+            nextPageToken = CreateCompositeCursorToken(items[^1], sortFields);
         }
 
         return new CursorPagedResult<TData>(items, nextPageToken, items.Count);
@@ -343,12 +334,11 @@ public static class QueryExtensions
     /// </summary>
     private static List<SortField> ParseSortFields(string? sortExpression)
     {
-        var sortFields = new List<SortField>();
-        
         if (string.IsNullOrWhiteSpace(sortExpression))
-            return sortFields;
+            return new List<SortField>();
 
         var fields = sortExpression.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var sortFields = new List<SortField>(fields.Length);
         
         foreach (var field in fields)
         {
@@ -367,6 +357,8 @@ public static class QueryExtensions
 
         return sortFields;
     }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Reflection.MethodInfo> _orderByMethodCache = new();
 
     /// <summary>
     /// Applies sort fields to query.
@@ -388,9 +380,11 @@ public static class QueryExtensions
                 ? (sortField.IsDescending ? "OrderByDescending" : "OrderBy")
                 : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
 
-            var method = typeof(Queryable).GetMethods()
-                .First(m => m.Name == methodName && m.GetParameters().Length == 2)
-                .MakeGenericMethod(typeof(TData), property.Type);
+            var cacheKey = $"{methodName}_{typeof(TData).FullName}_{property.Type.FullName}";
+            var method = _orderByMethodCache.GetOrAdd(cacheKey, _ =>
+                typeof(Queryable).GetMethods()
+                    .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                    .MakeGenericMethod(typeof(TData), property.Type));
 
             orderedQuery = (IOrderedQueryable<TData>)method.Invoke(null, new object[] { orderedQuery ?? query, lambda })!;
         }
@@ -398,21 +392,26 @@ public static class QueryExtensions
         return orderedQuery ?? query;
     }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Reflection.PropertyInfo?> _propertyCache = new();
+
     /// <summary>
     /// Creates a composite cursor token from the last item.
     /// </summary>
     private static string CreateCompositeCursorToken<TData>(TData lastItem, List<SortField> sortFields)
     {
-        var cursorValues = new Dictionary<string, object?>();
+        var cursorValues = new Dictionary<string, object?>(sortFields.Count);
+        var typeName = typeof(TData).FullName!;
 
         foreach (var sortField in sortFields)
         {
-            var property = typeof(TData).GetProperty(sortField.PropertyName, 
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var cacheKey = $"{typeName}.{sortField.PropertyName}";
+            var property = _propertyCache.GetOrAdd(cacheKey, _ =>
+                typeof(TData).GetProperty(sortField.PropertyName, 
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
+
             if (property != null)
             {
-                var value = property.GetValue(lastItem);
-                cursorValues[sortField.PropertyName] = value;
+                cursorValues[sortField.PropertyName] = property.GetValue(lastItem);
             }
         }
 
@@ -421,6 +420,9 @@ public static class QueryExtensions
 
         return PageToken.EncodeComposite(cursorValues);
     }
+
+    private static readonly System.Reflection.MethodInfo _stringCompareMethod = 
+        typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
 
     /// <summary>
     /// Applies composite cursor filter to the query.
@@ -435,15 +437,12 @@ public static class QueryExtensions
 
         var cursorValues = PageToken.DecodeComposite(pageToken);
         var parameter = Expression.Parameter(typeof(TData), "entity");
-
-        // Build composite filter: (field1 > cursor1) OR (field1 = cursor1 AND field2 > cursor2) OR ...
         Expression? filterExpression = null;
 
         for (int i = 0; i < sortFields.Count; i++)
         {
             Expression? currentCondition = null;
 
-            // Build equality conditions for all previous fields
             for (int j = 0; j < i; j++)
             {
                 var prevField = sortFields[j];
@@ -458,7 +457,6 @@ public static class QueryExtensions
                 currentCondition = currentCondition == null ? equality : Expression.AndAlso(currentCondition, equality);
             }
 
-            // Build comparison for current field
             var currentField = sortFields[i];
             if (cursorValues.TryGetValue(currentField.PropertyName, out var currentCursorValue))
             {
@@ -468,12 +466,9 @@ public static class QueryExtensions
                 
                 Expression comparison;
                 
-                // Use String.Compare for string comparisons
                 if (currentProperty.Type == typeof(string))
                 {
-                    var compareMethod = typeof(string).GetMethod(nameof(string.Compare), 
-                        new[] { typeof(string), typeof(string) })!;
-                    var compareCall = Expression.Call(compareMethod, currentProperty, currentConstant);
+                    var compareCall = Expression.Call(_stringCompareMethod, currentProperty, currentConstant);
                     var zero = Expression.Constant(0);
                     
                     comparison = currentField.IsDescending
@@ -513,26 +508,18 @@ public static class QueryExtensions
     {
         var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-        if (underlyingType == typeof(string))
-            return jsonElement.GetString();
-        if (underlyingType == typeof(int))
-            return jsonElement.GetInt32();
-        if (underlyingType == typeof(long))
-            return jsonElement.GetInt64();
-        if (underlyingType == typeof(bool))
-            return jsonElement.GetBoolean();
-        if (underlyingType == typeof(double))
-            return jsonElement.GetDouble();
-        if (underlyingType == typeof(decimal))
-            return jsonElement.GetDecimal();
-        if (underlyingType == typeof(DateTime))
-            return jsonElement.GetDateTime();
-        if (underlyingType == typeof(DateTimeOffset))
-            return jsonElement.GetDateTimeOffset();
-        if (underlyingType == typeof(Guid))
-            return jsonElement.GetGuid();
-
-        // Fallback: try to deserialize
-        return System.Text.Json.JsonSerializer.Deserialize(jsonElement.GetRawText(), targetType);
+        return Type.GetTypeCode(underlyingType) switch
+        {
+            TypeCode.String => jsonElement.GetString(),
+            TypeCode.Int32 => jsonElement.GetInt32(),
+            TypeCode.Int64 => jsonElement.GetInt64(),
+            TypeCode.Boolean => jsonElement.GetBoolean(),
+            TypeCode.Double => jsonElement.GetDouble(),
+            TypeCode.Decimal => jsonElement.GetDecimal(),
+            TypeCode.DateTime => jsonElement.GetDateTime(),
+            _ => underlyingType == typeof(DateTimeOffset) ? jsonElement.GetDateTimeOffset() :
+                 underlyingType == typeof(Guid) ? jsonElement.GetGuid() :
+                 System.Text.Json.JsonSerializer.Deserialize(jsonElement.GetRawText(), targetType)
+        };
     }
 }
