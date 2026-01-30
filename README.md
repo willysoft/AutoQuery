@@ -202,17 +202,17 @@ AutoQuery also supports cursor-based pagination, which is more efficient for lar
 - **Consistent Results**: No duplicate or skipped items when data changes between requests
 - **Better Performance**: More efficient for large datasets as it doesn't require counting or skipping rows
 - **Scalability**: Works well with real-time data and high-volume scenarios
+- **Flexible Sorting**: Supports sorting by any field using composite cursors
 
-### Important Limitations
+### How It Works
 
-**Cursor-based pagination works best when sorting by the cursor key field.** When you sort by other fields (e.g., `sort=name` when the cursor key is `id`), some items may be skipped in pagination because the cursor only tracks the ID value, not the sort field value.
+Cursor-based pagination uses **composite cursors** that encode all sort field values along with the cursor key. This allows accurate pagination regardless of which fields you sort by:
 
-**Best practices:**
-- **Recommended**: Sort by the cursor key: `sort=id` or `sort=-id`
-- **Also works well**: Include cursor key in multi-field sort: `sort=name,id` (name primary, id as tie-breaker)
-- **Limited support**: Sorting only by non-cursor fields: `sort=name` (may skip items across pages)
+- When sorting by the cursor key (e.g., `sort=id`): The cursor encodes just the ID
+- When sorting by other fields (e.g., `sort=name`): The cursor encodes both the name and ID values
+- Multi-field sorts (e.g., `sort=name,-dateOfBirth,id`): All field values are encoded
 
-If you need to sort by fields other than the cursor key with full pagination support, consider using offset-based pagination instead.
+The cursor key is automatically added as a tie-breaker if not already in the sort expression, ensuring deterministic ordering.
 
 ### Using Cursor-Based Pagination
 

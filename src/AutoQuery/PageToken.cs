@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace AutoQuery;
 
@@ -22,6 +23,21 @@ public static class PageToken
             throw new ArgumentException("Cursor value cannot be empty", nameof(cursorValue));
 
         var bytes = Encoding.UTF8.GetBytes(valueString);
+        return Convert.ToBase64String(bytes);
+    }
+
+    /// <summary>
+    /// Encodes multiple cursor values into an opaque page token (composite cursor).
+    /// </summary>
+    /// <param name="cursorValues">Dictionary of field names and their values.</param>
+    /// <returns>The encoded page token.</returns>
+    public static string EncodeComposite(Dictionary<string, object?> cursorValues)
+    {
+        if (cursorValues == null || cursorValues.Count == 0)
+            throw new ArgumentException("Cursor values cannot be null or empty", nameof(cursorValues));
+
+        var json = JsonSerializer.Serialize(cursorValues);
+        var bytes = Encoding.UTF8.GetBytes(json);
         return Convert.ToBase64String(bytes);
     }
 
@@ -59,6 +75,29 @@ public static class PageToken
             }
 
             return (T)Convert.ChangeType(valueString, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex)
+        {
+            throw new ArgumentException("Invalid page token", nameof(pageToken), ex);
+        }
+    }
+
+    /// <summary>
+    /// Decodes a composite page token into a dictionary of cursor values.
+    /// </summary>
+    /// <param name="pageToken">The page token to decode.</param>
+    /// <returns>Dictionary of field names and their values.</returns>
+    public static Dictionary<string, JsonElement> DecodeComposite(string pageToken)
+    {
+        if (string.IsNullOrWhiteSpace(pageToken))
+            throw new ArgumentException("Page token cannot be null or empty", nameof(pageToken));
+
+        try
+        {
+            var bytes = Convert.FromBase64String(pageToken);
+            var json = Encoding.UTF8.GetString(bytes);
+            return JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) 
+                ?? throw new InvalidOperationException("Failed to deserialize page token");
         }
         catch (Exception ex)
         {

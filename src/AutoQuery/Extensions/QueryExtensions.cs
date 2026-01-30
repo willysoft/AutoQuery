@@ -163,15 +163,8 @@ public static class QueryExtensions
     /// Applies query conditions and cursor-based pagination.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <strong>Important:</strong> Cursor-based pagination works best when sorting by the cursor key field.
-    /// When sorting by other fields, pagination will work but may not include all items in the expected order
-    /// unless the cursor key is also included in the sort expression.
-    /// </para>
-    /// <para>
-    /// For optimal results with non-cursor-key sorting, include the cursor key as a secondary sort field.
-    /// For example: <c>sort=name,id</c> where <c>id</c> is the cursor key.
-    /// </para>
+    /// Cursor-based pagination now supports sorting by any field using composite cursors.
+    /// The page token encodes all sort field values plus the cursor key for accurate pagination.
     /// </remarks>
     /// <typeparam name="TData">The type of the entity being queried.</typeparam>
     /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
@@ -201,15 +194,24 @@ public static class QueryExtensions
         if (cursorKeySelector == null)
             throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
 
-        // Apply sorting - cursor pagination requires consistent ordering
-        query = query.ApplySort(queryOption);
+        // Parse sort fields
+        var sortFields = ParseSortFields(queryOption.Sort);
+        var cursorPropertyName = GetPropertyName(cursorKeySelector);
+        
+        // Ensure cursor key is in sort as tie-breaker if not already present
+        if (!string.IsNullOrEmpty(cursorPropertyName) && 
+            !sortFields.Any(sf => string.Equals(sf.PropertyName, cursorPropertyName, StringComparison.OrdinalIgnoreCase)))
+        {
+            sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
+        }
+
+        // Apply sorting
+        query = ApplySortFields(query, sortFields);
 
         // Apply cursor-based filtering if page token is provided
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
-            // Determine if cursor key is sorted in descending order
-            bool isDescending = IsCursorKeyDescending(queryOption.Sort, cursorKeySelector);
-            query = ApplyCursorFilter(query, cursorKeySelector, queryOption.PageToken, isDescending);
+            query = ApplyCompositeCursorFilter(query, sortFields, queryOption.PageToken);
         }
 
         // Fetch one extra item to determine if there are more results
@@ -224,10 +226,7 @@ public static class QueryExtensions
         {
             items = items.Take(pageSize).ToList();
             var lastItem = items.Last();
-            var cursorValue = GetCursorValue(lastItem, cursorKeySelector);
-            if (cursorValue == null)
-                throw new InvalidOperationException($"Cursor key value cannot be null for {typeof(TData).Name}.");
-            nextPageToken = PageToken.Encode(cursorValue);
+            nextPageToken = CreateCompositeCursorToken(lastItem, sortFields);
         }
 
         return new CursorPagedResult<TData>(items, nextPageToken, items.Count);
@@ -328,5 +327,212 @@ public static class QueryExtensions
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Represents a sort field with its direction.
+    /// </summary>
+    private class SortField
+    {
+        public string PropertyName { get; set; } = null!;
+        public bool IsDescending { get; set; }
+    }
+
+    /// <summary>
+    /// Parses sort expression into list of sort fields.
+    /// </summary>
+    private static List<SortField> ParseSortFields(string? sortExpression)
+    {
+        var sortFields = new List<SortField>();
+        
+        if (string.IsNullOrWhiteSpace(sortExpression))
+            return sortFields;
+
+        var fields = sortExpression.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        
+        foreach (var field in fields)
+        {
+            if (string.IsNullOrWhiteSpace(field))
+                continue;
+
+            var isDescending = field.StartsWith("-");
+            var propertyName = isDescending ? field[1..] : field;
+
+            sortFields.Add(new SortField 
+            { 
+                PropertyName = propertyName, 
+                IsDescending = isDescending 
+            });
+        }
+
+        return sortFields;
+    }
+
+    /// <summary>
+    /// Applies sort fields to query.
+    /// </summary>
+    private static IQueryable<TData> ApplySortFields<TData>(IQueryable<TData> query, List<SortField> sortFields)
+    {
+        if (sortFields.Count == 0)
+            return query;
+
+        IOrderedQueryable<TData>? orderedQuery = null;
+
+        foreach (var sortField in sortFields)
+        {
+            var parameter = Expression.Parameter(typeof(TData), "x");
+            var property = Expression.Property(parameter, sortField.PropertyName);
+            var lambda = Expression.Lambda(property, parameter);
+
+            var methodName = orderedQuery == null
+                ? (sortField.IsDescending ? "OrderByDescending" : "OrderBy")
+                : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
+
+            var method = typeof(Queryable).GetMethods()
+                .First(m => m.Name == methodName && m.GetParameters().Length == 2)
+                .MakeGenericMethod(typeof(TData), property.Type);
+
+            orderedQuery = (IOrderedQueryable<TData>)method.Invoke(null, new object[] { orderedQuery ?? query, lambda })!;
+        }
+
+        return orderedQuery ?? query;
+    }
+
+    /// <summary>
+    /// Creates a composite cursor token from the last item.
+    /// </summary>
+    private static string CreateCompositeCursorToken<TData>(TData lastItem, List<SortField> sortFields)
+    {
+        var cursorValues = new Dictionary<string, object?>();
+
+        foreach (var sortField in sortFields)
+        {
+            var property = typeof(TData).GetProperty(sortField.PropertyName, 
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (property != null)
+            {
+                var value = property.GetValue(lastItem);
+                cursorValues[sortField.PropertyName] = value;
+            }
+        }
+
+        if (cursorValues.Count == 0)
+            throw new InvalidOperationException($"No valid properties found for sort fields in type {typeof(TData).Name}");
+
+        return PageToken.EncodeComposite(cursorValues);
+    }
+
+    /// <summary>
+    /// Applies composite cursor filter to the query.
+    /// </summary>
+    private static IQueryable<TData> ApplyCompositeCursorFilter<TData>(
+        IQueryable<TData> query, 
+        List<SortField> sortFields, 
+        string pageToken)
+    {
+        if (sortFields.Count == 0)
+            return query;
+
+        var cursorValues = PageToken.DecodeComposite(pageToken);
+        var parameter = Expression.Parameter(typeof(TData), "entity");
+
+        // Build composite filter: (field1 > cursor1) OR (field1 = cursor1 AND field2 > cursor2) OR ...
+        Expression? filterExpression = null;
+
+        for (int i = 0; i < sortFields.Count; i++)
+        {
+            Expression? currentCondition = null;
+
+            // Build equality conditions for all previous fields
+            for (int j = 0; j < i; j++)
+            {
+                var prevField = sortFields[j];
+                if (!cursorValues.TryGetValue(prevField.PropertyName, out var prevCursorValue))
+                    continue;
+
+                var prevProperty = Expression.Property(parameter, prevField.PropertyName);
+                var prevValue = ConvertJsonElement(prevCursorValue, prevProperty.Type);
+                var prevConstant = Expression.Constant(prevValue, prevProperty.Type);
+                var equality = Expression.Equal(prevProperty, prevConstant);
+
+                currentCondition = currentCondition == null ? equality : Expression.AndAlso(currentCondition, equality);
+            }
+
+            // Build comparison for current field
+            var currentField = sortFields[i];
+            if (cursorValues.TryGetValue(currentField.PropertyName, out var currentCursorValue))
+            {
+                var currentProperty = Expression.Property(parameter, currentField.PropertyName);
+                var currentValue = ConvertJsonElement(currentCursorValue, currentProperty.Type);
+                var currentConstant = Expression.Constant(currentValue, currentProperty.Type);
+                
+                Expression comparison;
+                
+                // Use String.Compare for string comparisons
+                if (currentProperty.Type == typeof(string))
+                {
+                    var compareMethod = typeof(string).GetMethod(nameof(string.Compare), 
+                        new[] { typeof(string), typeof(string) })!;
+                    var compareCall = Expression.Call(compareMethod, currentProperty, currentConstant);
+                    var zero = Expression.Constant(0);
+                    
+                    comparison = currentField.IsDescending
+                        ? Expression.LessThan(compareCall, zero)
+                        : Expression.GreaterThan(compareCall, zero);
+                }
+                else
+                {
+                    comparison = currentField.IsDescending
+                        ? Expression.LessThan(currentProperty, currentConstant)
+                        : Expression.GreaterThan(currentProperty, currentConstant);
+                }
+
+                currentCondition = currentCondition == null 
+                    ? comparison 
+                    : Expression.AndAlso(currentCondition, comparison);
+
+                filterExpression = filterExpression == null 
+                    ? currentCondition 
+                    : Expression.OrElse(filterExpression, currentCondition);
+            }
+        }
+
+        if (filterExpression != null)
+        {
+            var lambda = Expression.Lambda<Func<TData, bool>>(filterExpression, parameter);
+            query = query.Where(lambda);
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// Converts JsonElement to the target type.
+    /// </summary>
+    private static object? ConvertJsonElement(System.Text.Json.JsonElement jsonElement, Type targetType)
+    {
+        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        if (underlyingType == typeof(string))
+            return jsonElement.GetString();
+        if (underlyingType == typeof(int))
+            return jsonElement.GetInt32();
+        if (underlyingType == typeof(long))
+            return jsonElement.GetInt64();
+        if (underlyingType == typeof(bool))
+            return jsonElement.GetBoolean();
+        if (underlyingType == typeof(double))
+            return jsonElement.GetDouble();
+        if (underlyingType == typeof(decimal))
+            return jsonElement.GetDecimal();
+        if (underlyingType == typeof(DateTime))
+            return jsonElement.GetDateTime();
+        if (underlyingType == typeof(DateTimeOffset))
+            return jsonElement.GetDateTimeOffset();
+        if (underlyingType == typeof(Guid))
+            return jsonElement.GetGuid();
+
+        // Fallback: try to deserialize
+        return System.Text.Json.JsonSerializer.Deserialize(jsonElement.GetRawText(), targetType);
     }
 }
