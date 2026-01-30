@@ -162,6 +162,17 @@ public static class QueryExtensions
     /// <summary>
     /// Applies query conditions and cursor-based pagination.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>Important:</strong> Cursor-based pagination works best when sorting by the cursor key field.
+    /// When sorting by other fields, pagination will work but may not include all items in the expected order
+    /// unless the cursor key is also included in the sort expression.
+    /// </para>
+    /// <para>
+    /// For optimal results with non-cursor-key sorting, include the cursor key as a secondary sort field.
+    /// For example: <c>sort=name,id</c> where <c>id</c> is the cursor key.
+    /// </para>
+    /// </remarks>
     /// <typeparam name="TData">The type of the entity being queried.</typeparam>
     /// <typeparam name="TQueryOptions">The type of the query options.</typeparam>
     /// <param name="query">The query object.</param>
@@ -190,21 +201,14 @@ public static class QueryExtensions
         if (cursorKeySelector == null)
             throw new InvalidOperationException($"Cursor key selector not configured for {typeof(TData).Name}. Use HasCursorKey() in your configuration.");
 
-        // Ensure cursor key is included in sort for consistent pagination
-        var cursorPropertyName = GetPropertyName(cursorKeySelector);
-        var effectiveSort = EnsureCursorKeyInSort(queryOption.Sort, cursorPropertyName);
-        
-        // Apply sorting with cursor key included - cursor pagination requires consistent ordering
-        var originalSort = queryOption.Sort;
-        queryOption.Sort = effectiveSort;
+        // Apply sorting - cursor pagination requires consistent ordering
         query = query.ApplySort(queryOption);
-        queryOption.Sort = originalSort; // Restore original
 
         // Apply cursor-based filtering if page token is provided
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
             // Determine if cursor key is sorted in descending order
-            bool isDescending = IsCursorKeyDescending(effectiveSort, cursorKeySelector);
+            bool isDescending = IsCursorKeyDescending(queryOption.Sort, cursorKeySelector);
             query = ApplyCursorFilter(query, cursorKeySelector, queryOption.PageToken, isDescending);
         }
 
@@ -324,40 +328,5 @@ public static class QueryExtensions
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Ensures the cursor key is included in the sort expression for consistent pagination.
-    /// </summary>
-    private static string EnsureCursorKeyInSort(string? sortExpression, string? cursorPropertyName)
-    {
-        if (string.IsNullOrEmpty(cursorPropertyName))
-            return sortExpression ?? string.Empty;
-
-        // If no sort expression, use cursor key ascending
-        if (string.IsNullOrWhiteSpace(sortExpression))
-            return cursorPropertyName;
-
-        // Check if cursor key is already in the sort expression
-        var sortFields = sortExpression.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        
-        foreach (var sortField in sortFields)
-        {
-            if (string.IsNullOrWhiteSpace(sortField))
-                continue;
-
-            var isDescending = sortField.StartsWith("-");
-            var fieldName = isDescending ? sortField[1..] : sortField;
-
-            if (string.Equals(fieldName, cursorPropertyName, StringComparison.OrdinalIgnoreCase))
-            {
-                // Cursor key is already in sort, return as-is
-                return sortExpression;
-            }
-        }
-
-        // Cursor key not in sort, prepend it as primary sort (ascending by default)
-        // This ensures cursor-based filtering works correctly
-        return $"{cursorPropertyName},{sortExpression}";
     }
 }

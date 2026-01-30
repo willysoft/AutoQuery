@@ -203,15 +203,16 @@ AutoQuery also supports cursor-based pagination, which is more efficient for lar
 - **Better Performance**: More efficient for large datasets as it doesn't require counting or skipping rows
 - **Scalability**: Works well with real-time data and high-volume scenarios
 
-### Important: Sort Order with Cursor Pagination
+### Important Limitations
 
-**Cursor-based pagination always uses the cursor key as the primary sort field** to ensure consistent results. When you specify a different sort field (e.g., `sort=name`), the cursor key is automatically prepended to the sort expression:
+**Cursor-based pagination works best when sorting by the cursor key field.** When you sort by other fields (e.g., `sort=name` when the cursor key is `id`), some items may be skipped in pagination because the cursor only tracks the ID value, not the sort field value.
 
-- `sort=name` becomes `sort=id,name` (Id is cursor key, Name is secondary)
-- `sort=-name` becomes `sort=id,-name` (Id is primary ascending, Name secondary descending)
-- `sort=id` remains `sort=id` (cursor key already specified)
+**Best practices:**
+- **Recommended**: Sort by the cursor key: `sort=id` or `sort=-id`
+- **Also works well**: Include cursor key in multi-field sort: `sort=name,id` (name primary, id as tie-breaker)
+- **Limited support**: Sorting only by non-cursor fields: `sort=name` (may skip items across pages)
 
-This ensures that pagination is always deterministic and consistent across requests.
+If you need to sort by fields other than the cursor key with full pagination support, consider using offset-based pagination instead.
 
 ### Using Cursor-Based Pagination
 
