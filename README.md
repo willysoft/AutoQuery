@@ -203,6 +203,16 @@ AutoQuery also supports cursor-based pagination, which is more efficient for lar
 - **Better Performance**: More efficient for large datasets as it doesn't require counting or skipping rows
 - **Scalability**: Works well with real-time data and high-volume scenarios
 
+### Important: Sort Order with Cursor Pagination
+
+**Cursor-based pagination always uses the cursor key as the primary sort field** to ensure consistent results. When you specify a different sort field (e.g., `sort=name`), the cursor key is automatically prepended to the sort expression:
+
+- `sort=name` becomes `sort=id,name` (Id is cursor key, Name is secondary)
+- `sort=-name` becomes `sort=id,-name` (Id is primary ascending, Name secondary descending)
+- `sort=id` remains `sort=id` (cursor key already specified)
+
+This ensures that pagination is always deterministic and consistent across requests.
+
 ### Using Cursor-Based Pagination
 
 1. Define a query options class implementing `IQueryCursorOptions`:
