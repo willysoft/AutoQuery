@@ -12,7 +12,6 @@ public static class QueryExtensions
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> s_PropertysCache = new();
     private static readonly ConcurrentDictionary<string, PropertyInfo?> s_PropertyCache = new();
-    private static readonly ConcurrentDictionary<string, MethodInfo> s_OrderByMethodCache = new();
     private static readonly MethodInfo s_StringCompareMethod = 
         typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
 
@@ -129,7 +128,7 @@ public static class QueryExtensions
             sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
         }
 
-        query = ApplySortFields(query, sortFields);
+        query = ApplySort(query, sortFields);
 
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
@@ -137,18 +136,22 @@ public static class QueryExtensions
         }
 
         var pageSize = queryOption.PageSize ?? 10;
-        var items = query.Take(pageSize + 1).ToList();
+        var pagedQuery = query.Take(pageSize + 1);
+        var items = pagedQuery.ToList();
 
         string? nextPageToken = null;
-        var hasMore = items.Count > pageSize;
+        int count;
         
-        if (hasMore)
+        if (items.Count > pageSize)
         {
-            items.RemoveAt(items.Count - 1);
-            nextPageToken = CreateCompositeCursorToken(items[^1], sortFields);
+            count = pageSize;
+            nextPageToken = CreateCompositeCursorToken(items[pageSize - 1], sortFields);
+            var resultQuery = query.Take(pageSize);
+            return new CursorPagedResult<TData>(resultQuery, nextPageToken, count);
         }
 
-        return new CursorPagedResult<TData>(items.AsQueryable(), nextPageToken, items.Count);
+        count = items.Count;
+        return new CursorPagedResult<TData>(query.Take(count), nextPageToken, count);
     }
 
     /// <summary>
@@ -163,47 +166,8 @@ public static class QueryExtensions
         if (string.IsNullOrWhiteSpace(queryOption.Sort))
             return query;
 
-        var sortFields = queryOption.Sort.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var isFirstSort = true;
-
-        foreach (var sort in sortFields)
-        {
-            if (string.IsNullOrWhiteSpace(sort))
-                continue;
-
-            var descending = sort.StartsWith("-");
-            var sortBy = descending ? sort[1..] : sort;
-            var cacheKey = $"{typeof(T).FullName}_{sortBy}";
-            var propertyInfo = s_PropertyCache.GetOrAdd(cacheKey, _ => typeof(T).GetProperty(sortBy, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
-
-            if (propertyInfo == null)
-                continue;
-
-            var parameter = Expression.Parameter(typeof(T), "entity");
-            var property = Expression.Property(parameter, propertyInfo);
-            var lambda = Expression.Lambda(typeof(Func<,>).MakeGenericType(typeof(T), propertyInfo.PropertyType), property, parameter);
-
-            string methodName = (isFirstSort, descending) switch
-            {
-                (true, true) => "OrderByDescending",
-                (true, false) => "OrderBy",
-                (false, true) => "ThenByDescending",
-                (false, false) => "ThenBy"
-            };
-
-            var resultExpression = Expression.Call(
-                typeof(Queryable),
-                methodName,
-                [typeof(T), propertyInfo.PropertyType],
-                query.Expression,
-                lambda
-            );
-
-            query = query.Provider.CreateQuery<T>(resultExpression);
-            isFirstSort = false;
-        }
-
-        return query;
+        var sortFields = ParseSortFields(queryOption.Sort);
+        return ApplySort(query, sortFields);
     }
 
     /// <summary>
@@ -232,33 +196,47 @@ public static class QueryExtensions
     /// This private method provides the sorting implementation used by cursor pagination.
     /// It accepts a structured list of sort fields rather than a string expression.
     /// </remarks>
-    private static IQueryable<TData> ApplySortFields<TData>(IQueryable<TData> query, List<SortField> sortFields)
+    private static IQueryable<TData> ApplySort<TData>(IQueryable<TData> query, List<SortField> sortFields)
     {
         if (sortFields.Count == 0)
             return query;
 
-        IOrderedQueryable<TData>? orderedQuery = null;
+        var isFirstSort = true;
 
         foreach (var sortField in sortFields)
         {
+            var cacheKey = $"{typeof(TData).FullName}_{sortField.PropertyName}";
+            var propertyInfo = s_PropertyCache.GetOrAdd(cacheKey, _ =>
+                typeof(TData).GetProperty(sortField.PropertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance));
+
+            if (propertyInfo == null)
+                continue;
+
             var parameter = Expression.Parameter(typeof(TData), "entity");
-            var property = Expression.Property(parameter, sortField.PropertyName);
-            var lambda = Expression.Lambda(property, parameter);
+            var property = Expression.Property(parameter, propertyInfo);
+            var lambda = Expression.Lambda(typeof(Func<,>).MakeGenericType(typeof(TData), propertyInfo.PropertyType), property, parameter);
 
-            var methodName = orderedQuery == null
-                ? (sortField.IsDescending ? "OrderByDescending" : "OrderBy")
-                : (sortField.IsDescending ? "ThenByDescending" : "ThenBy");
+            string methodName = (isFirstSort, sortField.IsDescending) switch
+            {
+                (true, true) => "OrderByDescending",
+                (true, false) => "OrderBy",
+                (false, true) => "ThenByDescending",
+                (false, false) => "ThenBy"
+            };
 
-            var cacheKey = $"{methodName}_{typeof(TData).FullName}_{property.Type.FullName}";
-            var method = s_OrderByMethodCache.GetOrAdd(cacheKey, _ =>
-                typeof(Queryable).GetMethods()
-                    .First(m => m.Name == methodName && m.GetParameters().Length == 2)
-                    .MakeGenericMethod(typeof(TData), property.Type));
+            var resultExpression = Expression.Call(
+                typeof(Queryable),
+                methodName,
+                [typeof(TData), propertyInfo.PropertyType],
+                query.Expression,
+                lambda
+            );
 
-            orderedQuery = (IOrderedQueryable<TData>)method.Invoke(null, new object[] { orderedQuery ?? query, lambda })!;
+            query = query.Provider.CreateQuery<TData>(resultExpression);
+            isFirstSort = false;
         }
 
-        return orderedQuery ?? query;
+        return query;
     }
 
     /// <summary>
