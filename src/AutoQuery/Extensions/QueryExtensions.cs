@@ -136,22 +136,23 @@ public static class QueryExtensions
         }
 
         var pageSize = queryOption.PageSize ?? 10;
-        var pagedQuery = query.Take(pageSize + 1);
-        var items = pagedQuery.ToList();
+        var items = query.Take(pageSize + 1).ToList();
 
         string? nextPageToken = null;
         int count;
         
         if (items.Count > pageSize)
         {
+            items.RemoveAt(pageSize);
             count = pageSize;
-            nextPageToken = CreateCompositeCursorToken(items[pageSize - 1], sortFields);
-            var resultQuery = query.Take(pageSize);
-            return new CursorPagedResult<TData>(resultQuery, nextPageToken, count);
+            nextPageToken = CreateCompositeCursorToken(items[^1], sortFields);
+        }
+        else
+        {
+            count = items.Count;
         }
 
-        count = items.Count;
-        return new CursorPagedResult<TData>(query.Take(count), nextPageToken, count);
+        return new CursorPagedResult<TData>(items.AsQueryable(), nextPageToken, count);
     }
 
     /// <summary>
