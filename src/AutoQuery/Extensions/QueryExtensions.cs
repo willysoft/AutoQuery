@@ -12,7 +12,6 @@ public static class QueryExtensions
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> s_PropertysCache = new();
     private static readonly ConcurrentDictionary<string, PropertyInfo?> s_PropertyCache = new();
-    private static readonly ConcurrentDictionary<string, PropertyInfo?> _propertyCache = new();
     private static readonly ConcurrentDictionary<string, MethodInfo> _orderByMethodCache = new();
     private static readonly MethodInfo _stringCompareMethod = 
         typeof(string).GetMethod(nameof(string.Compare), new[] { typeof(string), typeof(string) })!;
@@ -130,7 +129,7 @@ public static class QueryExtensions
             sortFields.Add(new SortField { PropertyName = cursorPropertyName, IsDescending = false });
         }
 
-        query = ApplySort(query, sortFields);
+        query = ApplySortFields(query, sortFields);
 
         if (!string.IsNullOrWhiteSpace(queryOption.PageToken))
         {
@@ -227,9 +226,13 @@ public static class QueryExtensions
     }
 
     /// <summary>
-    /// Applies sort fields to query using same logic as ApplySort.
+    /// Applies sort fields to query.
     /// </summary>
-    private static IQueryable<TData> ApplySort<TData>(IQueryable<TData> query, List<SortField> sortFields)
+    /// <remarks>
+    /// This private method provides the sorting implementation used by cursor pagination.
+    /// It accepts a structured list of sort fields rather than a string expression.
+    /// </remarks>
+    private static IQueryable<TData> ApplySortFields<TData>(IQueryable<TData> query, List<SortField> sortFields)
     {
         if (sortFields.Count == 0)
             return query;
@@ -326,7 +329,7 @@ public static class QueryExtensions
         foreach (var sortField in sortFields)
         {
             var cacheKey = $"{typeName}.{sortField.PropertyName}";
-            var property = _propertyCache.GetOrAdd(cacheKey, _ =>
+            var property = s_PropertyCache.GetOrAdd(cacheKey, _ =>
                 typeof(TData).GetProperty(sortField.PropertyName, 
                     BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
 
