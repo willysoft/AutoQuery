@@ -16,6 +16,7 @@ public class FilterQueryBuilder<TQueryOptions, TData>
     private readonly ConcurrentDictionary<(Type BuilderType, Type QueryPropertyType), Func<object, object, Expression<Func<TData, bool>>>> _compiledExpressionsCache = new();
     private readonly ConcurrentDictionary<PropertyInfo, Func<TQueryOptions, object>> _propertyAccessorsCache = new();
     private readonly Dictionary<string, PropertyInfo> _queryOptionsProperties = typeof(TQueryOptions).GetProperties().ToDictionary(p => p.Name);
+    private LambdaExpression? _cursorKeySelector;
 
     /// <summary>
     /// Registers a property for use in filter queries.
@@ -158,5 +159,26 @@ public class FilterQueryBuilder<TQueryOptions, TData>
             ExpressionExtensions.ReplaceParameter(expr2.Parameters[0], parameter, expr2.Body)
         );
         return Expression.Lambda<Func<TData, bool>>(body, parameter);
+    }
+
+    /// <summary>
+    /// Configures the cursor key selector for cursor-based pagination.
+    /// </summary>
+    /// <typeparam name="TCursorKey">The type of the cursor key.</typeparam>
+    /// <param name="cursorKeySelector">The cursor key selector expression.</param>
+    /// <returns>The filter query builder for fluent chaining.</returns>
+    public FilterQueryBuilder<TQueryOptions, TData> HasCursorKey<TCursorKey>(Expression<Func<TData, TCursorKey>> cursorKeySelector)
+    {
+        _cursorKeySelector = cursorKeySelector ?? throw new ArgumentNullException(nameof(cursorKeySelector));
+        return this;
+    }
+
+    /// <summary>
+    /// Gets the cursor key selector.
+    /// </summary>
+    /// <returns>The cursor key selector expression, or null if not configured.</returns>
+    public LambdaExpression? GetCursorKeySelector()
+    {
+        return _cursorKeySelector;
     }
 }

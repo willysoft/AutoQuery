@@ -77,6 +77,33 @@ public class FilterQueryBuilderTests
         Assert.Equal(expected, compiledFilter(new TestData { Id = dataId }));
     }
 
+    [Fact]
+    public void HasCursorKey_ShouldSetCursorKeySelector()
+    {
+        // Arrange
+        var builder = new FilterQueryBuilder<TestQueryOptions, TestData>();
+
+        // Act
+        builder.HasCursorKey(d => d.Id);
+        var selector = builder.GetCursorKeySelector();
+
+        // Assert
+        Assert.NotNull(selector);
+    }
+
+    [Fact]
+    public void GetCursorKeySelector_ShouldReturnNull_WhenNotConfigured()
+    {
+        // Arrange
+        var builder = new FilterQueryBuilder<TestQueryOptions, TestData>();
+
+        // Act
+        var selector = builder.GetCursorKeySelector();
+
+        // Assert
+        Assert.Null(selector);
+    }
+
     private class TestData
     {
         public int Id { get; set; }
