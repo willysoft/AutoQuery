@@ -18,6 +18,24 @@ The benchmark results provide an overview of `AutoQuery`'s performance in handli
 
 ![](imgs/benchmarks.jpg)
 
+### Comprehensive Benchmark Suite
+
+A comprehensive benchmark suite is available covering:
+- **Cold Start Performance** - First-query latency and compilation overhead
+- **Concurrency Tests** - Thread safety and scalability (1-16 threads)
+- **Memory Performance** - GC pressure and allocation patterns
+- **Large Datasets** - Performance with 100K, 500K, and 1M records
+- **String Parsing** - Field and sort parameter parsing efficiency
+- **Expression Compilation** - Expression tree compilation overhead
+
+📊 **[View Baseline Results](sandbox/AutoQuery.Benchmark/BASELINE_RESULTS.md)** | 📖 **[Benchmark Documentation](sandbox/AutoQuery.Benchmark/README.md)**
+
+Run benchmarks:
+```bash
+cd sandbox/AutoQuery.Benchmark
+dotnet run -c Release --filter "*StringParsingBenchmark*"
+```
+
 ## Installation
 
 ### AutoQuery
