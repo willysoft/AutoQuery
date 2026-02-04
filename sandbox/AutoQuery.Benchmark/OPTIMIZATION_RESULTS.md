@@ -67,13 +67,14 @@ var selectedFields = queryOptions.Fields.Split(',')
 
 **After:**
 ```csharp
-// Phase 1 Optimization: Cache parsed field lists
-private readonly ConcurrentDictionary<string, string[]> _parsedFieldsCache = new();
+// Phase 1 Optimization: Cache parsed field HashSets directly
+private readonly ConcurrentDictionary<string, HashSet<string>> _parsedFieldsCache = new();
 
 // Use Span<char> for zero-allocation parsing
 private HashSet<string> ParseFields(string fields)
 {
-    var parsedFields = _parsedFieldsCache.GetOrAdd(fields, fieldStr =>
+    // Cache the HashSet directly to avoid repeated allocations
+    return _parsedFieldsCache.GetOrAdd(fields, fieldStr =>
     {
         var span = fieldStr.AsSpan();
         var result = new List<string>();
@@ -94,9 +95,8 @@ private HashSet<string> ParseFields(string fields)
                 start = i + 1;
             }
         }
-        return result.ToArray();
+        return new HashSet<string>(result, StringComparer.OrdinalIgnoreCase);
     });
-    return new HashSet<string>(parsedFields, StringComparer.OrdinalIgnoreCase);
 }
 ```
 
