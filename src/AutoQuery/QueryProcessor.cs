@@ -48,7 +48,7 @@ public class QueryProcessor : IQueryProcessor
 
             foreach (var property in properties)
             {
-                if (selectedFields.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
+                if (selectedFields.Contains(property.Name))
                 {
                     var propertyAccess = Expression.Property(parameter, property);
                     bindings.Add(Expression.Bind(property, propertyAccess));
