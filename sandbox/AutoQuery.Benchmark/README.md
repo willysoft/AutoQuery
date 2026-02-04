@@ -154,7 +154,7 @@ Current configuration (`BenchmarkConfig.cs`):
 - **Runtime**: .NET 8.0
 - **Mode**: ShortRun (for quick feedback)
 - **WarmupCount**: 1
-- **IterationCount**: 1
+- **IterationCount**: 3
 - **Diagnostics**: Memory Diagnoser enabled
 
 For production benchmarking, consider:
