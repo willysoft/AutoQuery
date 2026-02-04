@@ -174,11 +174,14 @@ public static class QueryExtensions
                     if (i > start)
                     {
                         var field = span.Slice(start, i - start).Trim();
-                        if (!field.IsEmpty)
+                        if (!field.IsEmpty && field.Length > 0)
                         {
                             bool descending = field[0] == '-';
-                            var fieldName = descending ? field.Slice(1).ToString() : field.ToString();
-                            result.Add(new SortField(fieldName, descending));
+                            var fieldName = descending && field.Length > 1 ? field.Slice(1).ToString() : field.ToString();
+                            if (!string.IsNullOrEmpty(fieldName))
+                            {
+                                result.Add(new SortField(fieldName, descending));
+                            }
                         }
                     }
                     start = i + 1;

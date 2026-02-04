@@ -13,8 +13,8 @@ public class QueryProcessor : IQueryProcessor
     internal readonly Dictionary<(Type QueryOptionsType, Type DataType), object> _builders = new();
     private readonly ConcurrentDictionary<Type, PropertyInfo[]> s_PropertysCache = new();
     
-    // Phase 1 Optimization: Cache parsed field lists to avoid repeated string parsing
-    private readonly ConcurrentDictionary<string, string[]> _parsedFieldsCache = new();
+    // Phase 1 Optimization: Cache parsed field HashSets to avoid repeated string parsing and HashSet creation
+    private readonly ConcurrentDictionary<string, HashSet<string>> _parsedFieldsCache = new();
     
     // Phase 1 Optimization: Cache compiled selector expressions using Lazy<T> for thread-safe single compilation
     private readonly ConcurrentDictionary<(Type DataType, string Fields), Lazy<object>> _compiledSelectorCache = new();
@@ -68,8 +68,8 @@ public class QueryProcessor : IQueryProcessor
     /// </summary>
     private HashSet<string> ParseFields(string fields)
     {
-        // Check cache first
-        var parsedFields = _parsedFieldsCache.GetOrAdd(fields, fieldStr =>
+        // Cache the HashSet directly to avoid repeated allocations
+        return _parsedFieldsCache.GetOrAdd(fields, fieldStr =>
         {
             // Use Span<char> for efficient parsing without allocations
             var span = fieldStr.AsSpan();
@@ -92,10 +92,8 @@ public class QueryProcessor : IQueryProcessor
                 }
             }
             
-            return result.ToArray();
+            return new HashSet<string>(result, StringComparer.OrdinalIgnoreCase);
         });
-
-        return new HashSet<string>(parsedFields, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
